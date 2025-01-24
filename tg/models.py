@@ -53,3 +53,18 @@ class RegistrationQueue(Base):
     telegram_id = Column(BigInteger, unique=True, nullable=False)
     entered_name = Column(String(100), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class VacationRequest(Base):
+    __tablename__ = 'vacation_requests'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+    status = Column(String(10), default='pending')
+    comments = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<VacationRequest(id={self.id}, user_id={self.user_id}, start_date='{self.start_date}', end_date='{self.end_date}', status='{self.status}')>"
