@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Load environment variables
+# Load environment variables from .env file
 load_dotenv()
 
 class Config:
@@ -18,7 +18,9 @@ engine = create_engine(DB_URL)
 Session = sessionmaker(bind=engine)
 
 # Токен бота
-BOT_TOKEN = os.getenv('BOT_TOKEN', '7074106154:AAG5O8GHIKahNCDpZ-loPOQWzoDa5198SK8')
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+if not BOT_TOKEN:
+    raise ValueError("No bot token found. Please set the BOT_TOKEN environment variable.")
 
 # Базовый класс для моделей
 Base = declarative_base()
