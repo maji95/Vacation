@@ -16,20 +16,6 @@ async def vacation_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    keyboard = [
-        [InlineKeyboardButton("По дням", callback_data="vacation_by_days")],
-        [InlineKeyboardButton("По часам", callback_data="vacation_by_hours")],
-        [InlineKeyboardButton("« Назад", callback_data="show_menu")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text("Выберите тип отпуска:", reply_markup=reply_markup)
-
-async def vacation_by_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик отпуска по дням"""
-    logger.info("Executing vacation_by_days function")
-    query = update.callback_query
-    await query.answer()
-
     session = get_session()
     try:
         user = session.query(User).filter_by(telegram_id=query.from_user.id).first()
@@ -37,19 +23,36 @@ async def vacation_by_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await query.edit_message_text("Пользователь не найден.")
             return
 
-        keyboard = [[InlineKeyboardButton("« Назад", callback_data="vacation_request")]]
+        keyboard = [
+            [InlineKeyboardButton("По дням", callback_data="vacation_by_days")],
+            [InlineKeyboardButton("По часам", callback_data="vacation_by_hours")],
+            [InlineKeyboardButton("« Назад", callback_data="show_menu")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
         await query.edit_message_text(
-            f"У вас доступно {user.vacation_days} дней отпуска.\n"
-            "Введите дату начала отпуска в формате ДД.ММ.ГГГГ",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            f"💡 У вас доступно {user.vacation_days} дней отпуска.\n\n"
+            "Выберите тип отпуска:",
+            reply_markup=reply_markup
         )
-        context.user_data['vacation_state'] = 'waiting_start_date'
-
     except Exception as e:
-        logger.error(f"Error in vacation_by_days: {e}")
+        logger.error(f"Error in vacation_request: {e}")
         await query.edit_message_text("Произошла ошибка при обработке запроса.")
     finally:
         session.close()
+
+async def vacation_by_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик отпуска по дням"""
+    logger.info("Executing vacation_by_days function")
+    query = update.callback_query
+    await query.answer()
+
+    keyboard = [[InlineKeyboardButton("« Назад", callback_data="vacation_request")]]
+    await query.edit_message_text(
+        "Введите дату начала отпуска в формате ДД.ММ.ГГГГ",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    context.user_data['vacation_state'] = 'waiting_start_date'
 
 async def vacation_by_hours(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Обработчик отпуска по часам"""

@@ -1,7 +1,9 @@
 from telegram.ext import Application, CallbackQueryHandler
-from .vacation_approval import approve_direct_vacation, reject_direct_vacation
+from .vacation_approval import handle_vacation_approval, approve_vacation, reject_vacation
+from .view_requests import view_vacation_requests
 
 def register_handlers(application: Application):
-    """Регистрация обработчиков директора"""
-    application.add_handler(CallbackQueryHandler(approve_direct_vacation, pattern="approve_direct_vacation"))
-    application.add_handler(CallbackQueryHandler(reject_direct_vacation, pattern="reject_direct_vacation"))
+    """Регистрация обработчиков для директора"""
+    application.add_handler(CallbackQueryHandler(view_vacation_requests, pattern="view_vacation_requests"))
+    application.add_handler(CallbackQueryHandler(approve_vacation, pattern="approve_vacation_\\d+"))
+    application.add_handler(CallbackQueryHandler(reject_vacation, pattern="reject_vacation_\\d+"))

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, BigInteger
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, BigInteger, Text
 from sqlalchemy.orm import relationship
 from config import Base
 from datetime import datetime
@@ -43,6 +43,11 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Добавляем связи
+    department = relationship("Department")
+    role = relationship("Role")
+    vacation_requests = relationship("VacationRequest", back_populates="user")
+
     def __repr__(self):
         return f"<User(id={self.id}, full_name='{self.full_name}', telegram_id={self.telegram_id}, vacation_days={self.vacation_days})>"
 
@@ -62,9 +67,12 @@ class VacationRequest(Base):
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
     status = Column(String(10), default='pending')
-    comments = Column(String, nullable=True)
+    comments = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Добавляем связь с пользователем
+    user = relationship("User", back_populates="vacation_requests")
 
     def __repr__(self):
         return f"<VacationRequest(id={self.id}, user_id={self.user_id}, start_date='{self.start_date}', end_date='{self.end_date}', status='{self.status}')>"

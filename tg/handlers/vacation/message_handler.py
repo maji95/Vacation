@@ -2,6 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from config import get_session
 from models import User, VacationRequest
+from ..director.vacation_approval import handle_vacation_approval
 import logging
 from datetime import datetime, timedelta
 
@@ -114,10 +115,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 session.commit()
                 logger.info(f"Создан запрос на отпуск для пользователя {user.full_name} (ID: {user.id})")
 
+                # Отправляем запрос директору
+                await handle_vacation_approval(update, context, vacation_request.id)
+
                 keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
                 await update.message.reply_text(
                     f"Ваш запрос на отпуск с {start_date.strftime('%d.%m.%Y')} "
-                    f"по {end_date.strftime('%d.%m.%Y')} принят и отправлен на рассмотрение.\n"
+                    f"по {end_date.strftime('%d.%m.%Y')} отправлен на рассмотрение директору.\n"
                     f"Количество дней: {vacation_days}",
                     reply_markup=InlineKeyboardMarkup(keyboard)
                 )
