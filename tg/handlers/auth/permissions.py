@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from config import get_session
-from models import User, Role, Department, RegistrationQueue
+from models import User, Department, RegistrationQueue
 import logging
 
 # Настройка логирования
@@ -48,10 +48,6 @@ async def check_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if permissions["is_admin"]:
         keyboard.append([InlineKeyboardButton("Админ-панель", callback_data="admin_panel")])
 
-    # Кнопки для HR
-    if permissions["role"] == "HR":
-        keyboard.append([InlineKeyboardButton("HR-панель", callback_data="hr_panel")])
-
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
         f"Добро пожаловать, {permissions['user'].full_name}!", 
@@ -81,10 +77,6 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if permissions["is_admin"]:
         keyboard.append([InlineKeyboardButton("Админ-панель", callback_data="admin_panel")])
 
-    # Кнопки для HR
-    if permissions["role"] == "HR":
-        keyboard.append([InlineKeyboardButton("HR-панель", callback_data="hr_panel")])
-
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
         f"Добро пожаловать, {permissions['user'].full_name}!", 
@@ -101,13 +93,11 @@ async def get_user_permissions(user_id: int):
             return {
                 "exists": False,
                 "is_admin": False,
-                "role": None,
                 "department": None,
                 "vacation_days": 0,
                 "user": None
             }
         
-        role = session.query(Role).filter_by(id=user.role_id).first() if user.role_id else None
         department = session.query(Department).filter_by(id=user.department_id).first() if user.department_id else None
         
         if user.full_name:
@@ -116,7 +106,6 @@ async def get_user_permissions(user_id: int):
         return {
             "exists": True,
             "is_admin": user.is_admin,
-            "role": role.role_name if role else None,
             "department": department.name if department else None,
             "vacation_days": user.vacation_days,
             "user": user

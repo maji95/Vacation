@@ -16,17 +16,17 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('full_name', 'telegram_id', 'department', 'role', 'vacation_days', 
-                   'is_manager', 'is_hr', 'is_director', 'is_admin', 'is_staff', 'is_active')
-    list_filter = ('department', 'role', 'is_manager', 'is_hr', 'is_director', 'is_admin', 'is_staff', 'is_active')
+    list_display = ('full_name', 'telegram_id', 'department', 
+                   'is_hr', 'is_director', 'is_admin', 'is_staff', 'is_active')
+    list_filter = ('department', 'is_hr', 'is_director', 'is_admin', 'is_staff', 'is_active')
     search_fields = ('full_name', 'telegram_id')
     ordering = ('full_name',)
     
     fieldsets = (
         (None, {'fields': ('telegram_id', 'password')}),
-        ('Personal info', {'fields': ('full_name', 'department', 'role', 'vacation_days')}),
+        ('Personal info', {'fields': ('full_name', 'department')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser',
-                                  'is_manager', 'is_hr', 'is_director', 'is_admin')}),
+                                  'is_hr', 'is_director', 'is_admin')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
     )
     
