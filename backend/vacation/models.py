@@ -32,16 +32,6 @@ class UserManager(BaseUserManager):
 
 # Create your models here.
 
-class Role(models.Model):
-    role_name = models.CharField(max_length=50, unique=True)
-
-    class Meta:
-        db_table = 'roles'
-        managed = False
-
-    def __str__(self):
-        return self.role_name
-
 class Department(models.Model):
     name = models.CharField(max_length=100)
 
@@ -64,7 +54,6 @@ class User(AbstractUser):
     telegram_id = models.BigIntegerField(unique=True)
     vacation_days = models.FloatField(default=0)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
-    role = models.ForeignKey(Role, on_delete=models.SET_NULL, null=True)
     
     is_manager = models.BooleanField(default=False)
     is_hr = models.BooleanField(default=False)
