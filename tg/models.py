@@ -28,28 +28,31 @@ class User(Base):
     full_name = Column(String(100), nullable=False)
     telegram_id = Column(Integer, unique=True, nullable=False)
     vacation_days = Column(Float, default=0)
-    
-    # Внешние ключи
     department_id = Column(Integer, ForeignKey('departments.id'))
-    role_id = Column(Integer, ForeignKey('roles.id'))
     
     # Флаги ролей и прав
-    is_manager = Column(Boolean, default=False)
     is_hr = Column(Boolean, default=False)
     is_director = Column(Boolean, default=False)
-    is_admin = Column(Boolean, default=False)  # Новый флаг администратора
+    is_admin = Column(Boolean, default=False)
+    is_superuser = Column(Boolean, default=False)
+    is_staff = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
+    
+    # Аутентификация
+    password = Column(String(255), nullable=True)
+    last_login = Column(DateTime, nullable=True)
+    date_joined = Column(DateTime, default=datetime.utcnow)
     
     # Временные метки
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Добавляем связи
+    # Связи
     department = relationship("Department")
-    role = relationship("Role")
     vacation_requests = relationship("VacationRequest", back_populates="user")
 
     def __repr__(self):
-        return f"<User(id={self.id}, full_name='{self.full_name}', telegram_id={self.telegram_id}, vacation_days={self.vacation_days})>"
+        return f"<User(id={self.id}, full_name='{self.full_name}')>"
 
 class RegistrationQueue(Base):
     __tablename__ = 'registration_queue'
