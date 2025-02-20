@@ -39,9 +39,6 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             if user.is_director:
                 keyboard.append([InlineKeyboardButton("👀 Просмотр заявок", callback_data="view_vacation_requests")])
             
-            if user.is_hr:
-                keyboard.append([InlineKeyboardButton("📊 HR Панель", callback_data="hr_panel")])
-            
             if user.is_admin:
                 keyboard.append([InlineKeyboardButton("⚙️ Админ панель", callback_data="admin_panel")])
             
