@@ -1,8 +1,8 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, ConversationHandler
 from config import get_session
 from models import User, VacationRequest
-from ..director.vacation_approval import handle_vacation_approval
+from ..approval.create_request import create_approval_request, send_approval_request
 import logging
 from datetime import datetime, timedelta
 
@@ -115,16 +115,26 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 session.commit()
                 logger.info(f"Создан запрос на отпуск для пользователя {user.full_name} (ID: {user.id})")
 
-                # Отправляем запрос директору
-                await handle_vacation_approval(update, context, vacation_request.id)
-
-                keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
-                await update.message.reply_text(
-                    f"Ваш запрос на отпуск с {start_date.strftime('%d.%m.%Y')} "
-                    f"по {end_date.strftime('%d.%m.%Y')} отправлен на рассмотрение директору.\n"
-                    f"Количество дней: {vacation_days}",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
-                )
+                # Создаем запись в таблицах утверждения
+                success = await create_approval_request(vacation_request.id)
+                if success:
+                    await send_approval_request(update, context, vacation_request.id)
+                    keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
+                    await update.message.reply_text(
+                        f"Ваш запрос на отпуск с {start_date.strftime('%d.%m.%Y')} "
+                        f"по {end_date.strftime('%d.%m.%Y')} отправлен на рассмотрение.\n"
+                        f"Количество дней: {vacation_days}",
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
+                else:
+                    # Если не удалось создать запись в таблицах утверждения
+                    session.delete(vacation_request)
+                    session.commit()
+                    keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
+                    await update.message.reply_text(
+                        "Произошла ошибка при создании запроса на отпуск. Пожалуйста, попробуйте позже.",
+                        reply_markup=InlineKeyboardMarkup(keyboard)
+                    )
                 context.user_data.clear()
             except ValueError:
                 keyboard = create_back_button()

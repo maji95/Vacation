@@ -37,7 +37,7 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
             # Добавляем кнопки в зависимости от роли пользователя
             if user.is_director:
-                keyboard.append([InlineKeyboardButton("👀 Просмотр заявок", callback_data="view_vacation_requests")])
+                keyboard.append([InlineKeyboardButton("👀 Просмотр заявок", callback_data="view_pending_requests")])
             
             if user.is_admin:
                 keyboard.append([InlineKeyboardButton("⚙️ Админ панель", callback_data="admin_panel")])

@@ -1,7 +1,7 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from config import get_session
-from models import ApprovalFirst, ApprovalFinal, ApprovalDone
+from models import User, ApprovalFirst, ApprovalSecond, ApprovalFinal, ApprovalDone
 import logging
 
 logging.basicConfig(
@@ -25,12 +25,17 @@ async def view_pending_requests(update: Update, context: ContextTypes.DEFAULT_TY
             status='pending'
         ).all()
 
+        second_level = session.query(ApprovalSecond).filter_by(
+            name_approval=user.full_name,
+            status='pending'
+        ).all()
+
         final_level = session.query(ApprovalFinal).filter_by(
             name_approval=user.full_name,
             status='pending'
         ).all()
 
-        all_requests = first_level + final_level
+        all_requests = first_level + second_level + final_level
 
         if not all_requests:
             await query.edit_message_text(
@@ -39,32 +44,49 @@ async def view_pending_requests(update: Update, context: ContextTypes.DEFAULT_TY
             )
             return
 
-        message = "📋 Заявки на ваше утверждение:\n\n"
-        keyboard = []
+        # Отправляем первое сообщение как ответ на callback
+        await query.edit_message_text(
+            "📋 Список заявок на утверждение:",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("« Назад", callback_data="show_menu")]])
+        )
 
+        # Отправляем отдельное сообщение для каждой заявки
         for req in all_requests:
-            level = 'Первый уровень' if isinstance(req, ApprovalFirst) else 'Финальный уровень'
-            message += (
-                f"{level}\n"
+            if isinstance(req, ApprovalFirst):
+                level = 'Первый уровень'
+                callback_prefix = 'first'
+            elif isinstance(req, ApprovalSecond):
+                level = 'Второй уровень'
+                callback_prefix = 'second'
+            else:
+                level = 'Финальный уровень'
+                callback_prefix = 'final'
+
+            message = (
+                f"📋 {level}\n"
                 f"Сотрудник: {req.name}\n"
                 f"Период: {req.start_date.strftime('%d.%m.%Y')} - {req.end_date.strftime('%d.%m.%Y')}\n"
-                f"Дней: {req.days}\n\n"
+                f"Дней: {req.days}"
             )
-            callback_prefix = 'first' if isinstance(req, ApprovalFirst) else 'final'
-            keyboard.append([
-                InlineKeyboardButton(f"✅ Одобрить {req.id}", callback_data=f"approve_{callback_prefix}_{req.id}"),
-                InlineKeyboardButton(f"❌ Отклонить {req.id}", callback_data=f"reject_{callback_prefix}_{req.id}")
-            ])
 
-        keyboard.append([InlineKeyboardButton("« Назад", callback_data="show_menu")])
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Одобрить", callback_data=f"approve_{callback_prefix}_{req.id}"),
+                    InlineKeyboardButton("❌ Отклонить", callback_data=f"reject_{callback_prefix}_{req.id}")
+                ]
+            ]
 
-        await query.edit_message_text(
-            text=message,
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
+            await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text=message,
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
 
     except Exception as e:
         logger.error(f"Error in view_pending_requests: {e}")
-        await query.edit_message_text("Ошибка при получении списка заявок")
+        await query.edit_message_text(
+            "Ошибка при получении списка заявок",
+            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("« Назад", callback_data="show_menu")]])
+        )
     finally:
         session.close()
