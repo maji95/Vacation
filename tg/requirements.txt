@@ -1,9 +1,9 @@
 blinker==1.9.0
 colorama==0.4.6
-python-telegram-bot==20.8
-pymysql==1.1.0
-sqlalchemy==2.0.37
-python-dotenv==0.21.1
-typing_extensions==4.12.2
-pandas==2.2.0
-openpyxl==3.1.2
+python-telegram-bot==21.1.1
+pymysql==1.1.1
+sqlalchemy==1.4.54
+python-dotenv==1.0.1
+typing_extensions==4.9.0
+pandas==2.2.3
+openpyxl==3.1.5
