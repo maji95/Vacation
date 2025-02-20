@@ -70,3 +70,30 @@ class VacationRequest(Base):
 
     def __repr__(self):
         return f"<VacationRequest(id={self.id}, user_id={self.user_id}, start_date='{self.start_date}', end_date='{self.end_date}', status='{self.status}')>"
+
+class NameDictionary(Base):
+    __tablename__ = 'name_dictionary'
+
+    id = Column(Integer, primary_key=True)
+    original_name = Column(String(100), nullable=False)
+    latin_name = Column(String(100), nullable=False)
+    department = Column(String(100), nullable=False)
+
+    def __repr__(self):
+        return f"<NameDictionary(id={self.id}, original_name='{self.original_name}', latin_name='{self.latin_name}')>"
+
+class ApprovalProcess(Base):
+    __tablename__ = 'approval_process'
+
+    id = Column(Integer, primary_key=True)
+    original_name = Column(String(100), nullable=False)
+    employee_name = Column(String(100), nullable=False)
+    first_approval = Column(String(100), nullable=True)
+    second_approval = Column(String(100), nullable=True)
+    final_approval = Column(String(100), nullable=True)
+    reception_info = Column(String(255), nullable=True)
+    replacement = Column(String(100), nullable=True)
+    timekeeper = Column(String(100), nullable=True)
+
+    def __repr__(self):
+        return f"<ApprovalProcess(id={self.id}, original_name='{self.original_name}', employee_name='{self.employee_name}')>"
