@@ -82,6 +82,66 @@ class NameDictionary(Base):
     def __repr__(self):
         return f"<NameDictionary(id={self.id}, original_name='{self.original_name}', latin_name='{self.latin_name}')>"
 
+class ApprovalFirst(Base):
+    __tablename__ = 'approval_first'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    name_approval = Column(String(100), nullable=False)
+    status = Column(String(20), default='pending')
+    date = Column(DateTime, default=datetime.utcnow)
+    days = Column(Float)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+
+    def __repr__(self):
+        return f"<ApprovalFirst(id={self.id}, name='{self.name}', status='{self.status}')>"
+
+class ApprovalSecond(Base):
+    __tablename__ = 'approval_second'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    name_approval = Column(String(100), nullable=False)
+    status = Column(String(20), default='pending')
+    date = Column(DateTime, default=datetime.utcnow)
+    days = Column(Float)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+
+    def __repr__(self):
+        return f"<ApprovalSecond(id={self.id}, name='{self.name}', status='{self.status}')>"
+
+class ApprovalFinal(Base):
+    __tablename__ = 'approval_final'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    name_approval = Column(String(100), nullable=False)
+    status = Column(String(20), default='pending')
+    date = Column(DateTime, default=datetime.utcnow)
+    days = Column(Float)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+
+    def __repr__(self):
+        return f"<ApprovalFinal(id={self.id}, name='{self.name}', status='{self.status}')>"
+
+class ApprovalDone(Base):
+    __tablename__ = 'approval_done'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    name_approval = Column(String(100), nullable=False)
+    status = Column(String(20), default='approved')
+    date = Column(DateTime, default=datetime.utcnow)
+    days = Column(Float)
+    start_date = Column(DateTime, nullable=False)
+    end_date = Column(DateTime, nullable=False)
+
+    def __repr__(self):
+        return f"<ApprovalDone(id={self.id}, name='{self.name}', status='{self.status}')>"
+
 class ApprovalProcess(Base):
     __tablename__ = 'approval_process'
 
