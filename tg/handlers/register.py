@@ -4,7 +4,7 @@ from .admin import register_handlers as register_admin
 from .vacation import register_handlers as register_vacation
 from .absence import register_handlers as register_absence
 from .approval import create_approval_request, send_approval_request, view_pending_requests, handle_approval
-from .absence.approval import handle_absence_approval
+from .approval.create_hours_request import handle_hours_approval
 from .menu import show_menu
 import logging
 
@@ -45,21 +45,21 @@ def register_handlers(application: Application):
     
     # Обработчики утверждения отсутствий
     application.add_handler(CallbackQueryHandler(
-        lambda update, context: handle_absence_approval(
+        lambda update, context: handle_hours_approval(
             update,
             context,
             int(update.callback_query.data.split('_')[-1]),
-            update.callback_query.data.split('_')[1],
+            update.callback_query.data.split('_')[2],
             True
         ),
         pattern=r"^approve_absence_(first|second|final)_\d+$"
     ))
     application.add_handler(CallbackQueryHandler(
-        lambda update, context: handle_absence_approval(
+        lambda update, context: handle_hours_approval(
             update,
             context,
             int(update.callback_query.data.split('_')[-1]),
-            update.callback_query.data.split('_')[1],
+            update.callback_query.data.split('_')[2],
             False
         ),
         pattern=r"^reject_absence_(first|second|final)_\d+$"

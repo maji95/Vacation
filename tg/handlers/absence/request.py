@@ -8,8 +8,9 @@ from telegram.ext import (
 )
 from datetime import datetime
 import logging
-from models import HoursRequest, User, ApprovalProcess
+from models import HoursRequest, User
 from config import get_session
+from ..approval.create_hours_request import create_hours_approval_request, send_hours_approval_request
 
 # Состояния разговора
 WAITING_DATE = 1
@@ -182,26 +183,18 @@ async def confirm_absence(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Получаем пользователя
         session = get_session()
-        user = session.query(User).filter_by(telegram_id=update.effective_user.id).first()
+        user = session.query(User).filter_by(telegram_id=query.from_user.id).first()
         if not user:
             raise ValueError("Пользователь не найден")
         
-        logger.info(f"Создаем запрос отсутствия для пользователя {user.id}")
-        
-        # Получаем процесс утверждения для сотрудника
-        approval_process = session.query(ApprovalProcess).filter_by(
-            employee_name=user.full_name
-        ).first()
-        
-        if not approval_process:
-            raise ValueError("Процесс утверждения не найден")
+        logger.info(f"Creating absence request for user: '{user.full_name}' (ID: {user.id})")
         
         # Создаем объект запроса
         hours_request = HoursRequest(
             user_id=user.id,
             date_absence=context.user_data['absence_date'],
-            start_hour=context.user_data['absence_start_time'],
-            end_hour=context.user_data['absence_end_time'],
+            start_hour=context.user_data['absence_start_time'].strftime('%H:%M'),
+            end_hour=context.user_data['absence_end_time'].strftime('%H:%M'),
             status='pending',
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
@@ -211,50 +204,50 @@ async def confirm_absence(update: Update, context: ContextTypes.DEFAULT_TYPE):
         session.commit()
         logger.info(f"Запрос отсутствия создан: {hours_request.id}")
         
-        # Определяем первого утверждающего
-        approver_name = None
-        if approval_process.first_approval:
-            approver_name = approval_process.first_approval
-        elif approval_process.final_approval:
-            approver_name = approval_process.final_approval
-            
-        if not approver_name:
-            raise ValueError("Не найден утверждающий")
-            
-        # Получаем утверждающего
-        approver = session.query(User).filter_by(full_name=approver_name).first()
-        if approver and approver.telegram_id:
-            # Отправляем уведомление первому утверждающему
-            keyboard = [
-                [
-                    InlineKeyboardButton("✅ Утвердить", callback_data=f"approve_absence_first_{hours_request.id}"),
-                    InlineKeyboardButton("❌ Отклонить", callback_data=f"reject_absence_first_{hours_request.id}")
-                ]
-            ]
-            await context.bot.send_message(
-                chat_id=approver.telegram_id,
-                text=(
-                    f"📋 Новый запрос на отсутствие от {user.full_name}:\n\n"
-                    f"📅 Дата: {hours_request.date_absence.strftime('%d.%m.%Y')}\n"
-                    f"🕐 Время: {hours_request.start_hour.strftime('%H:%M')} - "
-                    f"{hours_request.end_hour.strftime('%H:%M')}"
-                ),
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-            logger.info(f"Отправлено уведомление первому утверждающему для запроса {hours_request.id}")
+        # Создаем запись в таблицах утверждения
+        success = await create_hours_approval_request(hours_request.id)
+        logger.info(f"Create approval request result: {success}")
         
+        if success:
+            send_result = await send_hours_approval_request(update, context, hours_request.id)
+            logger.info(f"Send approval request result: {send_result}")
+            
+            if not send_result:
+                logger.error("Failed to send approval request notification")
+                session.delete(hours_request)
+                session.commit()
+                keyboard = [[InlineKeyboardButton("« Назад", callback_data="absence_request")]]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await query.edit_message_text(
+                    "❌ Произошла ошибка при отправке уведомления. Пожалуйста, попробуйте снова.",
+                    reply_markup=reply_markup
+                )
+                return ConversationHandler.END
+            
+            # Показываем сообщение об успехе
+            keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await query.edit_message_text(
+                "✅ Запрос на отсутствие успешно создан и отправлен на рассмотрение.",
+                reply_markup=reply_markup
+            )
+        else:
+            # Если не удалось создать запись в таблицах утверждения
+            session.delete(hours_request)
+            session.commit()
+            keyboard = [[InlineKeyboardButton("« Назад", callback_data="absence_request")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await query.edit_message_text(
+                "❌ Произошла ошибка при создании запроса. Пожалуйста, попробуйте снова.",
+                reply_markup=reply_markup
+            )
+            
         # Очищаем данные
         context.user_data.clear()
         logger.info("Контекст очищен")
-        
-        # Показываем сообщение об успехе
-        keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        
-        await query.edit_message_text(
-            "✅ Запрос на отсутствие успешно создан и отправлен на рассмотрение.",
-            reply_markup=reply_markup
-        )
         
         return ConversationHandler.END
         
