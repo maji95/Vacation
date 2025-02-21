@@ -39,7 +39,7 @@ async def send_next_approval_notification(context: ContextTypes.DEFAULT_TYPE, ne
             f"📋 Новый запрос на {level_name} утверждение\n"
             f"От: {new_approval.name}\n"
             f"Период: {new_approval.start_date.strftime('%d.%m.%Y')} - {new_approval.end_date.strftime('%d.%m.%Y')}\n"
-            f"Дней: {new_approval.days}"
+            f"Дней: {int(new_approval.days)}"
         )
 
         keyboard = [
@@ -108,7 +108,7 @@ async def notify_hr(context: ContextTypes.DEFAULT_TYPE, approval_entry):
             f"✨ Новый утвержденный отпуск\n\n"
             f"👤 Сотрудник: {approval_entry.name}\n"
             f"📅 Период: {approval_entry.start_date.strftime('%d.%m.%Y')} - {approval_entry.end_date.strftime('%d.%m.%Y')}\n"
-            f"📊 Дней: {approval_entry.days}\n"
+            f"📊 Дней: {int(approval_entry.days)}\n"
             f"⏰ Дата утверждения: {approval_entry.date.strftime('%d.%m.%Y %H:%M')}"
         )
 

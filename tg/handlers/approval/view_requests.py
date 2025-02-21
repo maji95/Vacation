@@ -66,7 +66,7 @@ async def view_pending_requests(update: Update, context: ContextTypes.DEFAULT_TY
                 f"📋 {level}\n"
                 f"Сотрудник: {req.name}\n"
                 f"Период: {req.start_date.strftime('%d.%m.%Y')} - {req.end_date.strftime('%d.%m.%Y')}\n"
-                f"Дней: {req.days}"
+                f"Дней: {int(req.days)}"
             )
 
             keyboard = [

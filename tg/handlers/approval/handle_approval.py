@@ -115,7 +115,7 @@ async def handle_approval(update: Update, context: ContextTypes.DEFAULT_TYPE, ap
             f"📋 {level_name} утверждение\n"
             f"👤 Сотрудник: {approval_entry.name}\n"
             f"📅 Период: {approval_entry.start_date.strftime('%d.%m.%Y')} - {approval_entry.end_date.strftime('%d.%m.%Y')}\n"
-            f"📊 Дней: {approval_entry.days}\n"
+            f"📊 Дней: {int(approval_entry.days)}\n"
             f"⏰ Время обработки: {approval_entry.date.strftime('%d.%m.%Y %H:%M')}"
         )
 

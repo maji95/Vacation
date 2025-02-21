@@ -121,7 +121,7 @@ async def send_approval_request(update: Update, context: ContextTypes.DEFAULT_TY
             f"📋 Новый запрос на отпуск\n"
             f"От: {employee.full_name}\n"
             f"Период: {vacation_request.start_date.strftime('%d.%m.%Y')} - {vacation_request.end_date.strftime('%d.%m.%Y')}\n"
-            f"Дней: {calculate_vacation_days(vacation_request.start_date, vacation_request.end_date)}"
+            f"Дней: {int(calculate_vacation_days(vacation_request.start_date, vacation_request.end_date))}"
         )
         
         await context.bot.send_message(

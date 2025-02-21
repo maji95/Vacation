@@ -13,10 +13,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def calculate_vacation_days(start_date: datetime, end_date: datetime) -> float:
+def calculate_vacation_days(start_date: datetime, end_date: datetime) -> int:
     """Подсчет количества дней отпуска"""
     days = (end_date - start_date).days + 1
-    return float(days)
+    return int(days)
 
 def create_back_button() -> InlineKeyboardMarkup:
     """Создает клавиатуру с кнопкой Назад"""
@@ -79,86 +79,44 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     )
                     return
 
-                # Проверяем случай одного дня
-                if start_date.date() == end_date.date():
-                    keyboard = [
-                        [InlineKeyboardButton("Да, перейти к отпуску по часам", callback_data="switch_to_hours")],
-                        [InlineKeyboardButton("Нет, выбрать другие даты", callback_data="restart_vacation_request")],
-                        [InlineKeyboardButton("« Назад", callback_data="back_to_menu")]
-                    ]
-                    await update.message.reply_text(
-                        "Вы выбрали отпуск на один день. Хотите оформить отпуск по часам?",
-                        reply_markup=InlineKeyboardMarkup(keyboard)
-                    )
-                    return
-
                 # Проверяем количество дней
                 vacation_days = calculate_vacation_days(start_date, end_date)
                 if vacation_days > user.vacation_days:
                     keyboard = create_back_button()
                     await update.message.reply_text(
-                        f"У вас недостаточно дней отпуска. Доступно: {user.vacation_days} дней.\n"
+                        f"У вас недостаточно дней отпуска. Доступно: {int(user.vacation_days)} дней.\n"
                         f"Запрошено: {vacation_days} дней.\n"
                         "Пожалуйста, выберите другие даты.",
                         reply_markup=keyboard
                     )
                     return
 
-                # Создаем запись в базе данных
-                vacation_request = VacationRequest(
-                    user_id=user.id,
-                    start_date=start_date,
-                    end_date=end_date,
-                    status='pending'
-                )
-                session.add(vacation_request)
-                session.commit()
-                logger.info(f"Создан запрос на отпуск для пользователя {user.full_name} (ID: {user.id})")
+                # Сохраняем данные в контексте для подтверждения
+                context.user_data['end_date'] = end_date
+                context.user_data['vacation_days'] = vacation_days
+                context.user_data['vacation_state'] = 'waiting_confirmation'
 
-                # Создаем запись в таблицах утверждения
-                success = await create_approval_request(vacation_request.id)
-                if success:
-                    await send_approval_request(update, context, vacation_request.id)
-                    keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
-                    await update.message.reply_text(
-                        f"Ваш запрос на отпуск с {start_date.strftime('%d.%m.%Y')} "
-                        f"по {end_date.strftime('%d.%m.%Y')} отправлен на рассмотрение.\n"
-                        f"Количество дней: {vacation_days}",
-                        reply_markup=InlineKeyboardMarkup(keyboard)
-                    )
-                else:
-                    # Если не удалось создать запись в таблицах утверждения
-                    session.delete(vacation_request)
-                    session.commit()
-                    keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
-                    await update.message.reply_text(
-                        "Произошла ошибка при создании запроса на отпуск. Пожалуйста, попробуйте позже.",
-                        reply_markup=InlineKeyboardMarkup(keyboard)
-                    )
-                context.user_data.clear()
+                # Показываем сообщение для подтверждения
+                keyboard = [
+                    [InlineKeyboardButton("✅ Подтвердить", callback_data="confirm_vacation")],
+                    [InlineKeyboardButton("✏️ Изменить даты", callback_data="restart_vacation_request")],
+                    [InlineKeyboardButton("❌ Отменить", callback_data="back_to_menu")]
+                ]
+                await update.message.reply_text(
+                    f"Пожалуйста, проверьте данные запроса на отпуск:\n\n"
+                    f"📅 Дата начала: {start_date.strftime('%d.%m.%Y')}\n"
+                    f"📅 Дата окончания: {end_date.strftime('%d.%m.%Y')}\n"
+                    f"📊 Количество дней: {vacation_days}\n"
+                    f"💡 Доступно дней отпуска: {int(user.vacation_days)}\n\n"
+                    f"Всё верно?",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
             except ValueError:
                 keyboard = create_back_button()
                 await update.message.reply_text(
                     "Неверный формат даты. Используйте формат ДД.ММ.ГГГГ",
                     reply_markup=keyboard
                 )
-
-        elif vacation_state == 'waiting_hours':
-            try:
-                # Здесь будет логика обработки часов
-                keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
-                await update.message.reply_text(
-                    "Ваш запрос на отпуск по часам принят и отправлен на рассмотрение.",
-                    reply_markup=InlineKeyboardMarkup(keyboard)
-                )
-            except ValueError:
-                keyboard = create_back_button()
-                await update.message.reply_text(
-                    "Неверный формат времени.",
-                    reply_markup=keyboard
-                )
-            finally:
-                context.user_data.clear()
 
     except Exception as e:
         logger.error(f"Error in handle_message: {e}")

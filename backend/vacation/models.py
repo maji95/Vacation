@@ -1,24 +1,33 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.contrib.auth.hashers import make_password
 
 class UserManager(BaseUserManager):
-    def create_user(self, telegram_id, full_name, password=None, **extra_fields):
-        if not telegram_id:
-            raise ValueError('Users must have a telegram_id')
+    def create_user(self, full_name, password=None, **extra_fields):
+        if not full_name:
+            raise ValueError('Users must have a full name')
+        
+        # Разделяем полное имя на части
+        name_parts = full_name.split()
+        if len(name_parts) < 2:
+            raise ValueError('Full name must include both first and last name')
+            
         user = self.model(
-            telegram_id=telegram_id,
             full_name=full_name,
             **extra_fields
         )
+        
+        # Устанавливаем пароль
         if password:
-            user.set_password(password)
+            user.password = make_password(password)
         else:
-            user.set_unusable_password()
+            user.set_password('1234')  # Устанавливаем пароль по умолчанию
+            
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, telegram_id, full_name, password=None, **extra_fields):
+    def create_superuser(self, full_name, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_admin', True)
@@ -28,9 +37,7 @@ class UserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError('Superuser must have is_superuser=True.')
         
-        return self.create_user(telegram_id, full_name, password, **extra_fields)
-
-# Create your models here.
+        return self.create_user(full_name, password, **extra_fields)
 
 class Department(models.Model):
     name = models.CharField(max_length=100)
@@ -50,37 +57,37 @@ class User(AbstractUser):
     email = None
     
     # Наши кастомные поля
-    full_name = models.CharField(max_length=100)
-    telegram_id = models.BigIntegerField(unique=True)
+    full_name = models.CharField(max_length=100, unique=True)  # Делаем full_name уникальным
+    telegram_id = models.BigIntegerField(null=True, blank=True)  # Делаем telegram_id необязательным
     vacation_days = models.FloatField(default=0)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
     
-    is_manager = models.BooleanField(default=False)
+    # Флаги ролей и прав
     is_hr = models.BooleanField(default=False)
     is_director = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
     
+    # Аутентификация и временные метки
+    password = models.CharField(max_length=128)
+    last_login = models.DateTimeField(null=True, blank=True)
+    date_joined = models.DateTimeField(default=timezone.now)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # Добавляем обязательные поля от AbstractUser
-    password = models.CharField(max_length=128, default='')
-    last_login = models.DateTimeField(null=True, blank=True)
-    is_superuser = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=True)
-    date_joined = models.DateTimeField(default=timezone.now)
-
     objects = UserManager()
 
-    USERNAME_FIELD = 'telegram_id'
-    REQUIRED_FIELDS = ['full_name']
+    USERNAME_FIELD = 'full_name'  # Используем full_name для входа
+    REQUIRED_FIELDS = []  # Убираем обязательные поля
 
     class Meta:
         db_table = 'users'
+        managed = False
 
     def __str__(self):
-        return f"{self.full_name} (Telegram ID: {self.telegram_id})"
+        return self.full_name
 
 class RegistrationQueue(models.Model):
     telegram_id = models.BigIntegerField(unique=True)
@@ -95,17 +102,11 @@ class RegistrationQueue(models.Model):
         return f"{self.entered_name} (Telegram ID: {self.telegram_id})"
 
 class VacationRequest(models.Model):
-    STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-    ]
-    
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='vacation_requests')
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
-    comments = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=10, default='pending')
+    comments = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -114,4 +115,97 @@ class VacationRequest(models.Model):
         managed = False
 
     def __str__(self):
-        return f"Vacation request for {self.user.full_name} ({self.start_date.date()} - {self.end_date.date()})"
+        return f"Vacation request for {self.user.full_name} ({self.start_date} - {self.end_date})"
+
+class NameDictionary(models.Model):
+    original_name = models.CharField(max_length=100)
+    latin_name = models.CharField(max_length=100)
+    department = models.CharField(max_length=100)
+
+    class Meta:
+        db_table = 'name_dictionary'
+        managed = False
+
+    def __str__(self):
+        return f"{self.original_name} -> {self.latin_name}"
+
+class ApprovalFirst(models.Model):
+    name = models.CharField(max_length=100)
+    name_approval = models.CharField(max_length=100)
+    status = models.CharField(max_length=20, default='pending')
+    date = models.DateTimeField(default=timezone.now)
+    days = models.FloatField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    class Meta:
+        db_table = 'approval_first'
+        managed = False
+
+    def __str__(self):
+        return f"First approval for {self.name} by {self.name_approval}"
+
+class ApprovalSecond(models.Model):
+    name = models.CharField(max_length=100)
+    name_approval = models.CharField(max_length=100)
+    status = models.CharField(max_length=20, default='pending')
+    date = models.DateTimeField(default=timezone.now)
+    days = models.FloatField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    class Meta:
+        db_table = 'approval_second'
+        managed = False
+
+    def __str__(self):
+        return f"Second approval for {self.name} by {self.name_approval}"
+
+class ApprovalFinal(models.Model):
+    name = models.CharField(max_length=100)
+    name_approval = models.CharField(max_length=100)
+    status = models.CharField(max_length=20, default='pending')
+    date = models.DateTimeField(default=timezone.now)
+    days = models.FloatField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    class Meta:
+        db_table = 'approval_final'
+        managed = False
+
+    def __str__(self):
+        return f"Final approval for {self.name} by {self.name_approval}"
+
+class ApprovalDone(models.Model):
+    name = models.CharField(max_length=100)
+    name_approval = models.CharField(max_length=100)
+    status = models.CharField(max_length=20, default='approved')
+    date = models.DateTimeField(default=timezone.now)
+    days = models.FloatField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    class Meta:
+        db_table = 'approval_done'
+        managed = False
+
+    def __str__(self):
+        return f"Completed approval for {self.name} by {self.name_approval}"
+
+class ApprovalProcess(models.Model):
+    original_name = models.CharField(max_length=100)
+    employee_name = models.CharField(max_length=100)
+    first_approval = models.CharField(max_length=100, null=True, blank=True)
+    second_approval = models.CharField(max_length=100, null=True, blank=True)
+    final_approval = models.CharField(max_length=100, null=True, blank=True)
+    reception_info = models.CharField(max_length=255, null=True, blank=True)
+    replacement = models.CharField(max_length=100, null=True, blank=True)
+    timekeeper = models.CharField(max_length=100, null=True, blank=True)
+
+    class Meta:
+        db_table = 'approval_process'
+        managed = False
+
+    def __str__(self):
+        return f"Approval process for {self.employee_name}"

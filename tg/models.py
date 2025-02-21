@@ -54,6 +54,7 @@ class RegistrationQueue(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class VacationRequest(Base):
+    """Модель запроса на отпуск"""
     __tablename__ = 'vacation_requests'
 
     id = Column(Integer, primary_key=True, autoincrement=True)

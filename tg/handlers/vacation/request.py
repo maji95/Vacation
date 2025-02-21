@@ -1,8 +1,9 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from config import get_session
-from models import User
+from models import User, VacationRequest
 from ..admin.system_monitor import SystemMonitor
+from ..approval.create_request import create_approval_request, send_approval_request
 import logging
 
 # Настройка логирования
@@ -33,15 +34,14 @@ async def vacation_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
         keyboard = [
-            [InlineKeyboardButton("По дням", callback_data="vacation_by_days")],
-            [InlineKeyboardButton("По часам", callback_data="vacation_by_hours")],
+            [InlineKeyboardButton("Запросить отпуск", callback_data="vacation_by_days")],
             [InlineKeyboardButton("« Назад", callback_data="show_menu")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
         await query.edit_message_text(
-            f"💡 У вас доступно {user.vacation_days} дней отпуска.\n\n"
-            "Выберите тип отпуска:",
+            f"💡 У вас доступно {int(user.vacation_days)} дней отпуска.\n\n"
+            "Нажмите кнопку ниже, чтобы начать запрос отпуска:",
             reply_markup=reply_markup
         )
     except Exception as e:
@@ -62,19 +62,6 @@ async def vacation_by_days(update: Update, context: ContextTypes.DEFAULT_TYPE):
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     context.user_data['vacation_state'] = 'waiting_start_date'
-
-async def vacation_by_hours(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Обработчик отпуска по часам"""
-    query = update.callback_query
-    await query.answer()
-
-    keyboard = [[InlineKeyboardButton("« Назад", callback_data="vacation_request")]]
-    await query.edit_message_text(
-        "Введите дату и время начала отпуска в формате:\n"
-        "ДД.ММ.ГГГГ ЧЧ:ММ",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-    context.user_data['vacation_state'] = 'waiting_hours'
 
 async def back_to_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Возврат в предыдущее меню"""
@@ -98,13 +85,77 @@ async def restart_vacation_request(update: Update, context: ContextTypes.DEFAULT
     # Возвращаемся к запросу отпуска по дням
     await vacation_by_days(update, context)
 
-async def switch_to_hours(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Переключение на отпуск по часам"""
+async def confirm_vacation(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Подтверждение запроса на отпуск"""
     query = update.callback_query
     await query.answer()
-    
-    # Очищаем состояние
-    context.user_data.clear()
-    
-    # Переходим к запросу отпуска по часам
-    await vacation_by_hours(update, context)
+
+    session = get_session()
+    try:
+        user = session.query(User).filter_by(telegram_id=query.from_user.id).first()
+        if not user:
+            await query.edit_message_text("Пользователь не найден.")
+            return
+
+        # Получаем сохраненные данные из контекста
+        start_date = context.user_data.get('start_date')
+        end_date = context.user_data.get('end_date')
+        vacation_days = context.user_data.get('vacation_days')
+
+        if not all([start_date, end_date, vacation_days]):
+            await query.edit_message_text(
+                "Ошибка: данные о запросе отпуска не найдены. Пожалуйста, начните заново.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("« В главное меню", callback_data="show_menu")
+                ]])
+            )
+            return
+
+        # Создаем запись в базе данных
+        vacation_request = VacationRequest(
+            user_id=user.id,
+            start_date=start_date,
+            end_date=end_date,
+            status='pending'
+        )
+        session.add(vacation_request)
+        session.commit()
+        logger.info(f"Создан запрос на отпуск для пользователя {user.full_name} (ID: {user.id})")
+
+        # Создаем запись в таблицах утверждения
+        success = await create_approval_request(vacation_request.id)
+        if success:
+            await send_approval_request(update, context, vacation_request.id)
+            await query.edit_message_text(
+                f"✅ Ваш запрос на отпуск успешно создан и отправлен на рассмотрение:\n\n"
+                f"📅 Период: {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}\n"
+                f"📊 Количество дней: {vacation_days}\n\n"
+                f"Вы получите уведомление после рассмотрения запроса.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("« В главное меню", callback_data="show_menu")
+                ]])
+            )
+        else:
+            # Если не удалось создать запись в таблицах утверждения
+            session.delete(vacation_request)
+            session.commit()
+            await query.edit_message_text(
+                "❌ Произошла ошибка при создании запроса на отпуск. Пожалуйста, попробуйте позже.",
+                reply_markup=InlineKeyboardMarkup([[
+                    InlineKeyboardButton("« В главное меню", callback_data="show_menu")
+                ]])
+            )
+
+        # Очищаем данные из контекста
+        context.user_data.clear()
+
+    except Exception as e:
+        logger.error(f"Error in confirm_vacation: {e}")
+        await query.edit_message_text(
+            "Произошла ошибка при обработке запроса.",
+            reply_markup=InlineKeyboardMarkup([[
+                InlineKeyboardButton("« В главное меню", callback_data="show_menu")
+            ]])
+        )
+    finally:
+        session.close()

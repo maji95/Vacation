@@ -1,13 +1,8 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import Role, Department, User, RegistrationQueue, VacationRequest
+from .models import Department, User, RegistrationQueue, VacationRequest, NameDictionary, ApprovalFirst, ApprovalSecond, ApprovalFinal, ApprovalDone, ApprovalProcess
 
 # Register your models here.
-
-@admin.register(Role)
-class RoleAdmin(admin.ModelAdmin):
-    list_display = ('role_name',)
-    search_fields = ('role_name',)
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
@@ -16,9 +11,8 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('full_name', 'telegram_id', 'department', 
-                   'is_hr', 'is_director', 'is_admin', 'is_staff', 'is_active')
-    list_filter = ('department', 'is_hr', 'is_director', 'is_admin', 'is_staff', 'is_active')
+    list_display = ('full_name', 'telegram_id', 'department', 'vacation_days', 'is_active')
+    list_filter = ('is_active', 'is_hr', 'is_director', 'is_admin', 'department')
     search_fields = ('full_name', 'telegram_id')
     ordering = ('full_name',)
     
@@ -51,6 +45,46 @@ class RegistrationQueueAdmin(admin.ModelAdmin):
 @admin.register(VacationRequest)
 class VacationRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'start_date', 'end_date', 'status', 'created_at')
-    list_filter = ('status', 'start_date', 'end_date')
+    list_filter = ('status', 'created_at')
     search_fields = ('user__full_name', 'comments')
     ordering = ('-created_at',)
+
+@admin.register(NameDictionary)
+class NameDictionaryAdmin(admin.ModelAdmin):
+    list_display = ('original_name', 'latin_name', 'department')
+    search_fields = ('original_name', 'latin_name', 'department')
+    ordering = ('original_name',)
+
+@admin.register(ApprovalFirst)
+class ApprovalFirstAdmin(admin.ModelAdmin):
+    list_display = ('name', 'name_approval', 'status', 'days', 'start_date', 'end_date')
+    list_filter = ('status', 'date')
+    search_fields = ('name', 'name_approval')
+    ordering = ('-date',)
+
+@admin.register(ApprovalSecond)
+class ApprovalSecondAdmin(admin.ModelAdmin):
+    list_display = ('name', 'name_approval', 'status', 'days', 'start_date', 'end_date')
+    list_filter = ('status', 'date')
+    search_fields = ('name', 'name_approval')
+    ordering = ('-date',)
+
+@admin.register(ApprovalFinal)
+class ApprovalFinalAdmin(admin.ModelAdmin):
+    list_display = ('name', 'name_approval', 'status', 'days', 'start_date', 'end_date')
+    list_filter = ('status', 'date')
+    search_fields = ('name', 'name_approval')
+    ordering = ('-date',)
+
+@admin.register(ApprovalDone)
+class ApprovalDoneAdmin(admin.ModelAdmin):
+    list_display = ('name', 'name_approval', 'status', 'days', 'start_date', 'end_date')
+    list_filter = ('status', 'date')
+    search_fields = ('name', 'name_approval')
+    ordering = ('-date',)
+
+@admin.register(ApprovalProcess)
+class ApprovalProcessAdmin(admin.ModelAdmin):
+    list_display = ('employee_name', 'first_approval', 'second_approval', 'final_approval', 'replacement', 'timekeeper')
+    search_fields = ('original_name', 'employee_name', 'first_approval', 'second_approval', 'final_approval')
+    ordering = ('employee_name',)
