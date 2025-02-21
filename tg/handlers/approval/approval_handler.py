@@ -2,6 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from config import get_session
 from models import User, ApprovalFirst, ApprovalSecond, ApprovalFinal, ApprovalDone, ApprovalProcess
+from ..admin.system_monitor import SystemMonitor
 from datetime import datetime, date
 import logging
 
@@ -74,6 +75,14 @@ async def notify_user(context: ContextTypes.DEFAULT_TYPE, approval_entry, is_app
             message = (
                 f"Ваш запрос на отпуск с {approval_entry.start_date.strftime('%d.%m.%Y')} "
                 f"по {approval_entry.end_date.strftime('%d.%m.%Y')} был {status}."
+            )
+
+            # Логируем результат утверждения
+            await SystemMonitor.log_action(
+                context,
+                "approval_result",
+                employee.telegram_id,
+                f"Запрос на отпуск {status} (final={is_final})"
             )
 
             # Отправляем сообщение

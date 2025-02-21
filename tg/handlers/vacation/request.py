@@ -2,6 +2,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from config import get_session
 from models import User
+from ..admin.system_monitor import SystemMonitor
 import logging
 
 # Настройка логирования
@@ -22,6 +23,14 @@ async def vacation_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not user:
             await query.edit_message_text("Пользователь не найден.")
             return
+
+        # Логируем начало запроса отпуска
+        await SystemMonitor.log_action(
+            context,
+            "vacation_start",
+            user.telegram_id,
+            f"Начат процесс запроса отпуска пользователем {user.full_name}"
+        )
 
         keyboard = [
             [InlineKeyboardButton("По дням", callback_data="vacation_by_days")],
