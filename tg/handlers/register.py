@@ -4,6 +4,7 @@ from .admin import register_handlers as register_admin
 from .vacation import register_handlers as register_vacation
 from .absence import register_handlers as register_absence
 from .approval import create_approval_request, send_approval_request, view_pending_requests, handle_approval
+from .absence.approval import handle_absence_approval
 from .menu import show_menu
 import logging
 
@@ -19,6 +20,8 @@ def register_handlers(application: Application):
     
     # Регистрируем обработчики утверждения
     application.add_handler(CallbackQueryHandler(view_pending_requests, pattern="^view_pending_requests$"))
+    
+    # Обработчики утверждения отпусков
     application.add_handler(CallbackQueryHandler(
         lambda update, context: handle_approval(
             update,
@@ -38,6 +41,28 @@ def register_handlers(application: Application):
             False
         ),
         pattern=r"^reject_(first|second|final)_\d+$"
+    ))
+    
+    # Обработчики утверждения отсутствий
+    application.add_handler(CallbackQueryHandler(
+        lambda update, context: handle_absence_approval(
+            update,
+            context,
+            int(update.callback_query.data.split('_')[-1]),
+            update.callback_query.data.split('_')[1],
+            True
+        ),
+        pattern=r"^approve_absence_(first|second|final)_\d+$"
+    ))
+    application.add_handler(CallbackQueryHandler(
+        lambda update, context: handle_absence_approval(
+            update,
+            context,
+            int(update.callback_query.data.split('_')[-1]),
+            update.callback_query.data.split('_')[1],
+            False
+        ),
+        pattern=r"^reject_absence_(first|second|final)_\d+$"
     ))
     
     # Регистрируем обработчики отсутствия

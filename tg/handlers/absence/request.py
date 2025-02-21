@@ -8,7 +8,7 @@ from telegram.ext import (
 )
 from datetime import datetime
 import logging
-from models import HoursRequest, User
+from models import HoursRequest, User, ApprovalProcess
 from config import get_session
 
 # Состояния разговора
@@ -141,7 +141,7 @@ async def handle_end_time(update: Update, context: ContextTypes.DEFAULT_TYPE):
             duration_str += f"{minutes} мин"
         
         await message.reply_text(
-            f"📋 Подтвердите запрос отсутствия:\n\n"
+            "📋 Подтвердите запрос отсутствия:\n\n"
             f"📅 Дата: {context.user_data['absence_date'].strftime('%d.%m.%Y')}\n"
             f"🕐 Время начала: {start_time.strftime('%H:%M')}\n"
             f"🕐 Время окончания: {end_time.strftime('%H:%M')}\n"
@@ -188,6 +188,14 @@ async def confirm_absence(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         logger.info(f"Создаем запрос отсутствия для пользователя {user.id}")
         
+        # Получаем процесс утверждения для сотрудника
+        approval_process = session.query(ApprovalProcess).filter_by(
+            employee_name=user.full_name
+        ).first()
+        
+        if not approval_process:
+            raise ValueError("Процесс утверждения не найден")
+        
         # Создаем объект запроса
         hours_request = HoursRequest(
             user_id=user.id,
@@ -202,6 +210,38 @@ async def confirm_absence(update: Update, context: ContextTypes.DEFAULT_TYPE):
         session.add(hours_request)
         session.commit()
         logger.info(f"Запрос отсутствия создан: {hours_request.id}")
+        
+        # Определяем первого утверждающего
+        approver_name = None
+        if approval_process.first_approval:
+            approver_name = approval_process.first_approval
+        elif approval_process.final_approval:
+            approver_name = approval_process.final_approval
+            
+        if not approver_name:
+            raise ValueError("Не найден утверждающий")
+            
+        # Получаем утверждающего
+        approver = session.query(User).filter_by(full_name=approver_name).first()
+        if approver and approver.telegram_id:
+            # Отправляем уведомление первому утверждающему
+            keyboard = [
+                [
+                    InlineKeyboardButton("✅ Утвердить", callback_data=f"approve_absence_first_{hours_request.id}"),
+                    InlineKeyboardButton("❌ Отклонить", callback_data=f"reject_absence_first_{hours_request.id}")
+                ]
+            ]
+            await context.bot.send_message(
+                chat_id=approver.telegram_id,
+                text=(
+                    f"📋 Новый запрос на отсутствие от {user.full_name}:\n\n"
+                    f"📅 Дата: {hours_request.date_absence.strftime('%d.%m.%Y')}\n"
+                    f"🕐 Время: {hours_request.start_hour.strftime('%H:%M')} - "
+                    f"{hours_request.end_hour.strftime('%H:%M')}"
+                ),
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            logger.info(f"Отправлено уведомление первому утверждающему для запроса {hours_request.id}")
         
         # Очищаем данные
         context.user_data.clear()
