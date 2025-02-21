@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 from config import get_session
 from models import User, VacationRequest
 import logging
-from datetime import datetime
+from ..approval.approval_utils import check_approval_permissions, notify_hr_managers, notify_employee_request, update_vacation_status
 
 # Настройка логирования
 logging.basicConfig(
@@ -92,46 +92,21 @@ async def approve_vacation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Проверяем права директора
         director = session.query(User).filter_by(telegram_id=query.from_user.id).first()
-        if not director or not director.is_director:
+        if not await check_approval_permissions(director):
             await query.edit_message_text("У вас нет прав для выполнения этого действия.")
             return
         
         # Обновляем статус запроса
-        vacation_request = session.query(VacationRequest).filter_by(id=vacation_request_id).first()
+        vacation_request = await update_vacation_status(session, vacation_request_id, 'approved')
         if not vacation_request:
-            await query.edit_message_text("Запрос на отпуск не найден.")
+            await query.edit_message_text("Запрос на отпуск не найден или уже обработан.")
             return
-        
-        if vacation_request.status != 'pending':
-            await query.edit_message_text("Этот запрос уже обработан.")
-            return
-        
-        # Обновляем статус
-        vacation_request.status = 'approved'
-        session.commit()
         
         # Уведомляем сотрудника
-        employee = session.query(User).filter_by(id=vacation_request.user_id).first()
-        await context.bot.send_message(
-            chat_id=employee.telegram_id,
-            text=f"✅ Ваш запрос на отпуск с {vacation_request.start_date.strftime('%d.%m.%Y')} "
-                 f"по {vacation_request.end_date.strftime('%d.%m.%Y')} одобрен!"
-        )
+        await notify_employee_request(context, vacation_request, True)
         
         # Уведомляем HR-менеджеров
-        hr_managers = session.query(User).filter_by(is_hr=True).all()
-        for hr in hr_managers:
-            try:
-                await context.bot.send_message(
-                    chat_id=hr.telegram_id,
-                    text=f"📋 Одобрен отпуск:\n\n"
-                         f"Сотрудник: {vacation_request.user.full_name}\n"
-                         f"Период: {vacation_request.start_date.strftime('%d.%m.%Y')} - "
-                         f"{vacation_request.end_date.strftime('%d.%m.%Y')}\n"
-                         f"Одобрил: {director.full_name}"
-                )
-            except Exception as e:
-                logger.error(f"Error sending notification to HR {hr.telegram_id}: {e}")
+        await notify_hr_managers(context, vacation_request)
         
         # Обновляем сообщение у директора
         keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]
@@ -159,31 +134,18 @@ async def reject_vacation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Проверяем права директора
         director = session.query(User).filter_by(telegram_id=query.from_user.id).first()
-        if not director or not director.is_director:
+        if not await check_approval_permissions(director):
             await query.edit_message_text("У вас нет прав для выполнения этого действия.")
             return
         
         # Обновляем статус запроса
-        vacation_request = session.query(VacationRequest).filter_by(id=vacation_request_id).first()
+        vacation_request = await update_vacation_status(session, vacation_request_id, 'rejected')
         if not vacation_request:
-            await query.edit_message_text("Запрос на отпуск не найден.")
+            await query.edit_message_text("Запрос на отпуск не найден или уже обработан.")
             return
-        
-        if vacation_request.status != 'pending':
-            await query.edit_message_text("Этот запрос уже обработан.")
-            return
-        
-        # Обновляем статус
-        vacation_request.status = 'rejected'
-        session.commit()
         
         # Уведомляем сотрудника
-        employee = session.query(User).filter_by(id=vacation_request.user_id).first()
-        await context.bot.send_message(
-            chat_id=employee.telegram_id,
-            text=f"❌ Ваш запрос на отпуск с {vacation_request.start_date.strftime('%d.%m.%Y')} "
-                 f"по {vacation_request.end_date.strftime('%d.%m.%Y')} отклонен."
-        )
+        await notify_employee_request(context, vacation_request, False)
         
         # Обновляем сообщение у директора
         keyboard = [[InlineKeyboardButton("« В главное меню", callback_data="show_menu")]]

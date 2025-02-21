@@ -4,7 +4,7 @@ from .admin import register_handlers as register_admin
 from .vacation import register_handlers as register_vacation
 from .absence import register_handlers as register_absence
 from .approval import create_approval_request, send_approval_request, view_pending_requests, handle_approval
-from .approval.create_hours_request import handle_hours_approval
+from .approval.approval_hours_handler import handle_hours_approval
 from .menu import show_menu
 import logging
 

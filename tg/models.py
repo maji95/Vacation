@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, BigInteger, Text
+from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, ForeignKey, BigInteger, Text, Time
 from sqlalchemy.orm import relationship
 from config import Base
 from datetime import datetime
@@ -224,6 +224,7 @@ class ApprovalFinalHour(Base):
         return f"<ApprovalFinalHour(id={self.id}, name='{self.name}', status='{self.status}')>"
 
 class ApprovalDoneHour(Base):
+    """Модель для хранения информации об утвержденных отгулах"""
     __tablename__ = 'approval_done_hour'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -232,8 +233,8 @@ class ApprovalDoneHour(Base):
     status = Column(String(20), default='approved')
     date = Column(DateTime, default=datetime.utcnow)
     date_absence = Column(DateTime, nullable=False)
-    start_hour = Column(String(5), nullable=False)
-    end_hour = Column(String(5), nullable=False)
+    start_hour = Column(Time, nullable=False)
+    end_hour = Column(Time, nullable=False)
 
     def __repr__(self):
         return f"<ApprovalDoneHour(id={self.id}, name='{self.name}', status='{self.status}')>"

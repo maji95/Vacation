@@ -10,7 +10,8 @@ from datetime import datetime
 import logging
 from models import HoursRequest, User
 from config import get_session
-from ..approval.create_hours_request import create_hours_approval_request, send_hours_approval_request
+from ..approval.approval_hours_creator import create_hours_approval_request
+from ..approval.approval_hours_notifier import send_hours_approval_request
 
 # Состояния разговора
 WAITING_DATE = 1
