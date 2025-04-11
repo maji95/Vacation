@@ -1,23 +1,9 @@
+{% extends 'base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Система отпусков</title>
-  <link rel="stylesheet" href="{% static 'css/main.css' %}">
-</head>
-<body>
-  <aside class="sidebar">
-    <h2>Навигация</h2>
-    <a href="{% url 'index' %}">Главная</a>
-    <a href="{% url 'submit' %}">Подача заявки</a>
-    <a href="{% url 'requests' %}">Все заявки</a>
-    <a href="{% url 'calendar_view' %}">Календарь</a>
-  </aside>
-  
 
-  <div class="main-content">
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
     <div class="left-half">
       <div class="half-block">
         <h1>Подача заявки</h1>
@@ -50,8 +36,8 @@
             </select>
           </label>
 
-          <label>Комментарий:
-            <textarea name="comments" rows="3"></textarea>
+          <label>Комментарии:
+            <textarea name="comments"></textarea>
           </label>
 
           <button type="submit">Подать заявку</button>
@@ -135,6 +121,4 @@
         </div>
       </div>
     </div>
-  </div>
-</body>
-</html>
+{% endblock %}

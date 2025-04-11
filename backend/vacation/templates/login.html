@@ -17,10 +17,16 @@
       </div>
     {% endif %}
     
+    {% if form_errors %}
+      <div class="error-message">
+        {{ form_errors }}
+      </div>
+    {% endif %}
+    
     <form method="post" action="{% url 'login' %}">
       {% csrf_token %}
-      <label for="id_username">Полное имя:</label>
-      <input type="text" name="username" id="id_username" required>
+      <label for="id_full_name">Полное имя:</label>
+      <input type="text" name="full_name" id="id_full_name" required>
       
       <label for="id_password">Пароль:</label>
       <input type="password" name="password" id="id_password" required>

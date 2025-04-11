@@ -1,0 +1,80 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Система отпусков{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <style>
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background-color: #f5f5f5;
+      border-bottom: 1px solid #ddd;
+      width: 100%;
+    }
+    .logout-btn {
+      background-color: #f44336;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .logout-btn:hover {
+      background-color: #d32f2f;
+    }
+    .user-info {
+      margin-right: 15px;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+    }
+    .content-wrapper {
+      display: flex;
+      flex: 1;
+    }
+    .main-content {
+      display: flex;
+      flex: 1;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  {% if user.is_authenticated %}
+  <div class="header">
+    <h2>Система отпусков</h2>
+    <div style="display: flex; align-items: center;">
+      <span class="user-info">{{ user.full_name }}</span>
+      <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+        {% csrf_token %}
+        <button type="submit" class="logout-btn">Выйти</button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="content-wrapper">
+    <aside class="sidebar">
+      <h2>Навигация</h2>
+      <a href="{% url 'index' %}">Главная</a>
+      <a href="{% url 'submit' %}">Подача заявки</a>
+      <a href="{% url 'requests' %}">Все заявки</a>
+      <a href="{% url 'calendar_view' %}">Календарь</a>
+    </aside>
+
+    <div class="main-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</body>
+</html>

@@ -11,14 +11,14 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('full_name', 'telegram_id', 'department', 'vacation_days', 'is_active')
-    list_filter = ('is_active', 'is_hr', 'is_director', 'is_admin', 'department')
+    list_display = ('full_name', 'telegram_id', 'department_id', 'vacation_days', 'is_active')
+    list_filter = ('is_active', 'is_hr', 'is_director', 'is_admin', 'department_id')
     search_fields = ('full_name', 'telegram_id')
     ordering = ('full_name',)
     
     fieldsets = (
         (None, {'fields': ('telegram_id', 'password')}),
-        ('Personal info', {'fields': ('full_name', 'department')}),
+        ('Personal info', {'fields': ('full_name', 'department_id')}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser',
                                   'is_hr', 'is_director', 'is_admin')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),

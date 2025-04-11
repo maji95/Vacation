@@ -7,9 +7,9 @@ urlpatterns = [
     path('register/', views.user_register, name='user_register'),
     
     # Web views
-    path('', views.index_view, name='index'),
-    path('submit/', views.submit_view, name='submit'),
-    path('requests/', views.requests_view, name='requests'),
+    path('', views.index, name='index'),
+    path('submit/', views.submit, name='submit'),
+    path('requests/', views.requests, name='requests'),
     path('calendar/', views.calendar_view, name='calendar_view'),
     
     # Vacation request endpoints

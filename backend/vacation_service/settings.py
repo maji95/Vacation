@@ -80,13 +80,24 @@ AUTH_USER_MODEL = 'vacation.User'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+try:
+    # Пытаемся импортировать настройки из отдельного файла
+    from .db_settings import DATABASES, pymysql
+except ImportError:
+    # Если файл не найден, используем пустые настройки MySQL
+    import pymysql
+    pymysql.install_as_MySQLdb()
+    
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'HR_db',
+            'USER': 'root',
+            'PASSWORD': '',
+            'HOST': 'localhost',
+            'PORT': '3306',
+        }
     }
-}
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -147,3 +158,60 @@ REST_FRAMEWORK = {
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True  # Только для разработки
 CORS_ALLOW_CREDENTIALS = True
+
+# Настройки аутентификации
+AUTH_USER_MODEL = 'vacation.User'  # Указываем нашу кастомную модель пользователя
+LOGIN_URL = '/login/'  # URL для страницы входа
+LOGIN_REDIRECT_URL = '/'  # URL для перенаправления после успешного входа
+LOGOUT_REDIRECT_URL = '/login/'  # URL для перенаправления после выхода
+
+# Настройки бэкенда аутентификации
+AUTHENTICATION_BACKENDS = [
+    'vacation.backends.FullNameModelBackend',  # Наш кастомный бэкенд
+    'django.contrib.auth.backends.ModelBackend',  # Стандартный бэкенд Django
+]
+
+# Настройки логирования
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'debug.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'vacation': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+    'root': {
+        'handlers': ['console', 'file'],
+        'level': 'DEBUG',
+    },
+}

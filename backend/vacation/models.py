@@ -13,11 +13,11 @@ class UserManager(BaseUserManager):
             **extra_fields
         )
         
-        # Устанавливаем пароль
+        # Устанавливаем пароль в открытом виде
         if password:
-            user.password = make_password(password)
+            user.password = password  # Храним пароль в открытом виде
         else:
-            user.set_password('1234')  # Устанавливаем пароль по умолчанию
+            user.password = '1234'  # Устанавливаем пароль по умолчанию
             
         user.save(using=self._db)
         return user
@@ -55,7 +55,7 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=100, unique=True)  # Делаем full_name уникальным
     telegram_id = models.BigIntegerField(null=True, blank=True)  # Делаем telegram_id необязательным
     vacation_days = models.FloatField(default=0)
-    department = models.CharField(max_length=100, null=True, blank=True)  # Временно меняем на CharField
+    department_id = models.IntegerField(null=True, blank=True)  # Поле для отдела (ID)
     
     # Флаги ролей и прав
     is_hr = models.BooleanField(default=False)
@@ -98,8 +98,8 @@ class RegistrationQueue(models.Model):
 
 class VacationRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='vacation_requests')
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    start_date = models.DateField()
+    end_date = models.DateField()
     vacation_type = models.CharField(max_length=20, default='annual', choices=[
         ('annual', 'Ежегодный'),
         ('unpaid', 'Без сохранения'),
