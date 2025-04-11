@@ -16,8 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
+from vacation import views as vacation_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('vacation.urls')),  # Добавляем URL'ы нашего приложения
+    path('api/', include('vacation.urls')),  # API endpoints
+    
+    # Web views
+    path('', vacation_views.index_view, name='index'),
+    path('submit/', vacation_views.submit_view, name='submit'),
+    path('requests/', vacation_views.requests_view, name='requests'),
+    path('calendar/', vacation_views.calendar_view, name='calendar_view'),
+    path('vacations/', vacation_views.vacation_list, name='vacation_list'),
+    path('vacations/<int:pk>/', vacation_views.vacation_detail, name='vacation_detail'),
+    
+    # Authentication
+    path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
 ]

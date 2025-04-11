@@ -1,0 +1,129 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Календарь отпусков</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <style>
+    .content {
+      flex: 1;
+      padding: 40px;
+    }
+    .calendar-controls {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+    .calendar-controls button {
+      background: #2f3542;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      margin: 0 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      background: #f1f2f6;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .calendar-header {
+      background: #2f3542;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      border-radius: 4px;
+    }
+    .calendar-day {
+      min-height: 100px;
+      background: white;
+      padding: 10px;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .calendar-day.empty {
+      background: #f1f2f6;
+      box-shadow: none;
+    }
+    .calendar-day.weekend {
+      background: #f8f9fa;
+    }
+    .day-number {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .vacation-item {
+      background: #70a1ff;
+      color: white;
+      padding: 4px 6px;
+      border-radius: 4px;
+      margin-bottom: 5px;
+      font-size: 12px;
+    }
+    .vacation-item.pending {
+      background: #ffa502;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <h2>Навигация</h2>
+    <a href="{% url 'index' %}">Главная</a>
+    <a href="{% url 'submit' %}">Подача заявки</a>
+    <a href="{% url 'requests' %}">Все заявки</a>
+    <a href="{% url 'calendar_view' %}" class="active">Календарь</a>
+  </aside>
+  
+  <div class="content">
+    <h1>Календарь отпусков - {{ month_name }} {{ year }}</h1>
+    
+    <div class="calendar-controls">
+      <a href="?month={{ prev_month }}"><button>Предыдущий месяц</button></a>
+      <h2>{{ month_name }} {{ year }}</h2>
+      <a href="?month={{ next_month }}"><button>Следующий месяц</button></a>
+    </div>
+    
+    <div class="calendar">
+      <!-- Заголовки дней недели -->
+      <div class="calendar-header">Пн</div>
+      <div class="calendar-header">Вт</div>
+      <div class="calendar-header">Ср</div>
+      <div class="calendar-header">Чт</div>
+      <div class="calendar-header">Пт</div>
+      <div class="calendar-header">Сб</div>
+      <div class="calendar-header">Вс</div>
+      
+      <!-- Дни календаря -->
+      {% for week in calendar_data %}
+        {% for day in week %}
+          {% if day.day == '' %}
+            <div class="calendar-day empty"></div>
+          {% else %}
+            <div class="calendar-day {% if day.is_weekend %}weekend{% endif %}">
+              <div class="day-number">{{ day.day }}</div>
+              {% for vacation in day.vacations %}
+                <div class="vacation-item {% if vacation.status == 'pending' %}pending{% endif %}">
+                  {{ vacation.user }} - 
+                  {% if vacation.type == 'annual' %}
+                    Ежегодный
+                  {% elif vacation.type == 'unpaid' %}
+                    Без сохранения
+                  {% elif vacation.type == 'study' %}
+                    Учебный
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</body>
+</html>

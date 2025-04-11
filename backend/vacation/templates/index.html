@@ -1,0 +1,140 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Система отпусков</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+  <aside class="sidebar">
+    <h2>Навигация</h2>
+    <a href="{% url 'index' %}">Главная</a>
+    <a href="{% url 'submit' %}">Подача заявки</a>
+    <a href="{% url 'requests' %}">Все заявки</a>
+    <a href="{% url 'calendar_view' %}">Календарь</a>
+  </aside>
+  
+
+  <div class="main-content">
+    <div class="left-half">
+      <div class="half-block">
+        <h1>Подача заявки</h1>
+        <form method="post" action="{% url 'vacation_list' %}">
+          {% csrf_token %}
+          <label>Сотрудник:
+            <select name="user_id">
+              <option value="{{ user.id }}">Я сам</option>
+              {% if user.is_hr or user.is_admin %}
+                {% for employee in employees %}
+                  <option value="{{ employee.id }}">{{ employee.full_name }}</option>
+                {% endfor %}
+              {% endif %}
+            </select>
+          </label>
+
+          <label>Дата начала отпуска:
+            <input type="date" name="start_date" required />
+          </label>
+
+          <label>Дата окончания отпуска:
+            <input type="date" name="end_date" required />
+          </label>
+
+          <label>Тип отпуска:
+            <select name="vacation_type">
+              <option value="annual">Ежегодный оплачиваемый</option>
+              <option value="unpaid">Без сохранения зарплаты</option>
+              <option value="study">Учебный</option>
+            </select>
+          </label>
+
+          <label>Комментарий:
+            <textarea name="comments" rows="3"></textarea>
+          </label>
+
+          <button type="submit">Подать заявку</button>
+        </form>
+      </div>
+
+      <div class="user-info">
+        <h2>Информация о пользователе</h2>
+        <p>Имя: <strong>{{ user.full_name }}</strong></p>
+        {% if last_vacation %}
+        <p>Последний отпуск: <strong>{{ last_vacation.start_date|date:"d.m.Y" }} – {{ last_vacation.end_date|date:"d.m.Y" }}</strong></p>
+        {% else %}
+        <p>Последний отпуск: <strong>Нет данных</strong></p>
+        {% endif %}
+        <p>Остаток дней отпуска: <strong>{{ user.vacation_days }} дней</strong></p>
+        <p>Доступно видов отпуска: <strong>3</strong></p>
+      </div>
+    </div>
+
+    <div class="right-half">
+      <div class="half-block">
+        <h2>Заявки</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Сотрудник</th>
+              <th>Период</th>
+              <th>Тип</th>
+              <th>Действия</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for request in vacation_requests %}
+            <tr>
+              <td>{{ request.user.full_name }}</td>
+              <td>{{ request.start_date|date:"d.m.Y" }} - {{ request.end_date|date:"d.m.Y" }}</td>
+              <td>
+                {% if request.vacation_type == 'annual' %}
+                  Ежегодный
+                {% elif request.vacation_type == 'unpaid' %}
+                  Без сохранения
+                {% elif request.vacation_type == 'study' %}
+                  Учебный
+                {% endif %}
+              </td>
+              <td>
+                {% if user.is_hr or user.is_director or user.is_admin %}
+                <form method="post" action="{% url 'vacation_detail' request.id %}" style="display: inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve">
+                  <button type="submit">✅</button>
+                </form>
+                <form method="post" action="{% url 'vacation_detail' request.id %}" style="display: inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="reject">
+                  <button type="submit">❌</button>
+                </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="4">Нет активных заявок</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="half-block">
+        <h2>Календарь отпусков — {{ current_month }}</h2>
+        <div class="calendar-grid">
+          {% for day in calendar_days %}
+          <div class="calendar-cell">
+            <strong>{{ day.day }}</strong>
+            {% for vacation in day.vacations %}
+              <span class="vacation">{{ vacation.user.full_name }}</span>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

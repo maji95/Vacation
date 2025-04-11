@@ -1,13 +1,21 @@
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
-from .auth import register_handlers as register_auth
-from .admin import register_handlers as register_admin
-from .vacation import register_handlers as register_vacation
-from .absence import register_handlers as register_absence
-from .approval import create_approval_request, send_approval_request, view_pending_requests, handle_approval
-from .approval.approval_hours_handler import handle_hours_approval
-from .menu import show_menu
 import logging
+from telegram import Update
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
+from .menu import show_menu
+from .vacation import (
+    vacation_request, 
+    vacation_by_days, 
+    confirm_vacation, 
+    restart_vacation_request,
+    process_vacation_message
+)
+from .approval import view_pending_requests, approve_request, reject_request
+from .auth import start_auth, process_auth
+from .admin import admin_panel, process_admin_command
+from .core.request_types import RequestType
+from .core.dispatcher import RequestDispatcher
 
+# Настройка логирования
 logger = logging.getLogger(__name__)
 
 def register_handlers(application: Application):
@@ -16,65 +24,90 @@ def register_handlers(application: Application):
     
     # Регистрируем команду /start и callback для меню
     application.add_handler(CommandHandler("start", show_menu))
-    application.add_handler(CallbackQueryHandler(show_menu, pattern="show_menu"))
+    application.add_handler(CallbackQueryHandler(show_menu, pattern="^show_menu$"))
     
-    # Регистрируем обработчики утверждения
+    # Регистрируем обработчики для отпусков через диспетчер
+    application.add_handler(CallbackQueryHandler(
+        lambda update, context: RequestDispatcher.dispatch_request(
+            update, context, RequestType.VACATION, "start"
+        ),
+        pattern="^vacation_request$"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        lambda update, context: RequestDispatcher.dispatch_request(
+            update, context, RequestType.VACATION, "process"
+        ),
+        pattern="^vacation_by_days$"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        lambda update, context: RequestDispatcher.dispatch_request(
+            update, context, RequestType.VACATION, "confirm"
+        ),
+        pattern="^confirm_vacation$"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        lambda update, context: RequestDispatcher.dispatch_request(
+            update, context, RequestType.VACATION, "cancel"
+        ),
+        pattern="^restart_vacation_request$"
+    ))
+    
+    # Регистрируем обработчики для админ-панели через диспетчер
+    application.add_handler(CallbackQueryHandler(
+        lambda update, context: RequestDispatcher.dispatch_request(
+            update, context, RequestType.ADMIN, "start"
+        ),
+        pattern="^admin_menu$"
+    ))
+    
+    application.add_handler(CallbackQueryHandler(
+        lambda update, context: RequestDispatcher.dispatch_request(
+            update, context, RequestType.ADMIN, "process"
+        ),
+        pattern="^admin_"
+    ))
+    
+    # Обработчики для утверждения запросов
     application.add_handler(CallbackQueryHandler(view_pending_requests, pattern="^view_pending_requests$"))
+    application.add_handler(CallbackQueryHandler(approve_request, pattern="^approve_"))
+    application.add_handler(CallbackQueryHandler(reject_request, pattern="^reject_"))
     
-    # Обработчики утверждения отпусков
-    application.add_handler(CallbackQueryHandler(
-        lambda update, context: handle_approval(
-            update,
-            context,
-            int(update.callback_query.data.split('_')[-1]),
-            update.callback_query.data.split('_')[1],
-            True
-        ),
-        pattern=r"^approve_(first|second|final)_\d+$"
-    ))
-    application.add_handler(CallbackQueryHandler(
-        lambda update, context: handle_approval(
-            update,
-            context,
-            int(update.callback_query.data.split('_')[-1]),
-            update.callback_query.data.split('_')[1],
-            False
-        ),
-        pattern=r"^reject_(first|second|final)_\d+$"
+    # Обработчики для аутентификации
+    application.add_handler(CommandHandler("auth", 
+        lambda update, context: RequestDispatcher.dispatch_request(
+            update, context, RequestType.AUTH, "start"
+        )
     ))
     
-    # Обработчики утверждения отсутствий
-    application.add_handler(CallbackQueryHandler(
-        lambda update, context: handle_hours_approval(
-            update,
-            context,
-            int(update.callback_query.data.split('_')[-1]),
-            update.callback_query.data.split('_')[2],
-            True
-        ),
-        pattern=r"^approve_absence_(first|second|final)_\d+$"
-    ))
-    application.add_handler(CallbackQueryHandler(
-        lambda update, context: handle_hours_approval(
-            update,
-            context,
-            int(update.callback_query.data.split('_')[-1]),
-            update.callback_query.data.split('_')[2],
-            False
-        ),
-        pattern=r"^reject_absence_(first|second|final)_\d+$"
-    ))
+    # Обработчик для текстовых сообщений (для ввода дат и т.д.)
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, process_message))
     
-    # Регистрируем обработчики отсутствия
-    register_absence(application)
+    logger.info("Регистрация обработчиков завершена")
+
+async def process_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработка текстовых сообщений в зависимости от состояния пользователя"""
+    user_data = context.user_data
     
-    # Регистрируем обработчики отпуска
-    register_vacation(application)
-    
-    # Регистрируем обработчики аутентификации
-    register_auth(application)
-    
-    # Регистрируем обработчики админ-панели
-    register_admin(application)
-    
-    logger.info("Все обработчики зарегистрированы")
+    # Определяем, какой тип запроса обрабатывается
+    if 'vacation_state' in user_data:
+        # Обработка сообщений для запросов на отпуск
+        from .vacation.request import process_vacation_message
+        await process_vacation_message(update, context)
+    elif 'auth_state' in user_data:
+        # Обработка сообщений для аутентификации
+        await RequestDispatcher.dispatch_request(
+            update, context, RequestType.AUTH, "process"
+        )
+    elif 'admin_state' in user_data:
+        # Обработка сообщений для админ-панели
+        await RequestDispatcher.dispatch_request(
+            update, context, RequestType.ADMIN, "process"
+        )
+    else:
+        # Если состояние не определено, отправляем инструкцию
+        await update.message.reply_text(
+            "Я не понимаю, что вы хотите сделать. Пожалуйста, используйте команду /start для доступа к меню."
+        )

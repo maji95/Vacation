@@ -8,11 +8,6 @@ class UserManager(BaseUserManager):
         if not full_name:
             raise ValueError('Users must have a full name')
         
-        # Разделяем полное имя на части
-        name_parts = full_name.split()
-        if len(name_parts) < 2:
-            raise ValueError('Full name must include both first and last name')
-            
         user = self.model(
             full_name=full_name,
             **extra_fields
@@ -44,7 +39,7 @@ class Department(models.Model):
 
     class Meta:
         db_table = 'departments'
-        managed = False
+        managed = True
 
     def __str__(self):
         return self.name
@@ -60,7 +55,7 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=100, unique=True)  # Делаем full_name уникальным
     telegram_id = models.BigIntegerField(null=True, blank=True)  # Делаем telegram_id необязательным
     vacation_days = models.FloatField(default=0)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True)
+    department = models.CharField(max_length=100, null=True, blank=True)  # Временно меняем на CharField
     
     # Флаги ролей и прав
     is_hr = models.BooleanField(default=False)
@@ -84,7 +79,7 @@ class User(AbstractUser):
 
     class Meta:
         db_table = 'users'
-        managed = False
+        managed = True
 
     def __str__(self):
         return self.full_name
@@ -96,7 +91,7 @@ class RegistrationQueue(models.Model):
 
     class Meta:
         db_table = 'registration_queue'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"{self.entered_name} (Telegram ID: {self.telegram_id})"
@@ -105,14 +100,23 @@ class VacationRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='vacation_requests')
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    status = models.CharField(max_length=10, default='pending')
+    vacation_type = models.CharField(max_length=20, default='annual', choices=[
+        ('annual', 'Ежегодный'),
+        ('unpaid', 'Без сохранения'),
+        ('study', 'Учебный')
+    ])
+    status = models.CharField(max_length=10, default='pending', choices=[
+        ('pending', 'Ожидает'),
+        ('approved', 'Одобрено'),
+        ('rejected', 'Отклонено')
+    ])
     comments = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'vacation_requests'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"Vacation request for {self.user.full_name} ({self.start_date} - {self.end_date})"
@@ -124,7 +128,7 @@ class NameDictionary(models.Model):
 
     class Meta:
         db_table = 'name_dictionary'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"{self.original_name} -> {self.latin_name}"
@@ -140,7 +144,7 @@ class ApprovalFirst(models.Model):
 
     class Meta:
         db_table = 'approval_first'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"First approval for {self.name} by {self.name_approval}"
@@ -156,7 +160,7 @@ class ApprovalSecond(models.Model):
 
     class Meta:
         db_table = 'approval_second'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"Second approval for {self.name} by {self.name_approval}"
@@ -172,7 +176,7 @@ class ApprovalFinal(models.Model):
 
     class Meta:
         db_table = 'approval_final'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"Final approval for {self.name} by {self.name_approval}"
@@ -188,7 +192,7 @@ class ApprovalDone(models.Model):
 
     class Meta:
         db_table = 'approval_done'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"Completed approval for {self.name} by {self.name_approval}"
@@ -205,7 +209,7 @@ class ApprovalProcess(models.Model):
 
     class Meta:
         db_table = 'approval_process'
-        managed = False
+        managed = True
 
     def __str__(self):
         return f"Approval process for {self.employee_name}"

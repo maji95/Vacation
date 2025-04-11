@@ -127,5 +127,45 @@ async def notify_hr(context: ContextTypes.DEFAULT_TYPE, approval_entry):
     finally:
         session.close()
 
+async def approve_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик для одобрения запроса"""
+    query = update.callback_query
+    data = query.data
+    
+    # Парсим данные из callback
+    parts = data.split('_')
+    if len(parts) < 3:
+        await query.answer("Некорректный формат данных")
+        return
+        
+    level = parts[1]  # first, second или final
+    approval_id = int(parts[2])
+    
+    # Импортируем handle_approval из локального модуля
+    from .handle_approval import handle_approval
+    
+    # Вызываем функцию обработки с параметром is_approved=True
+    await handle_approval(update, context, approval_id, level, True)
+
+async def reject_request(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Обработчик для отклонения запроса"""
+    query = update.callback_query
+    data = query.data
+    
+    # Парсим данные из callback
+    parts = data.split('_')
+    if len(parts) < 3:
+        await query.answer("Некорректный формат данных")
+        return
+        
+    level = parts[1]  # first, second или final
+    approval_id = int(parts[2])
+    
+    # Импортируем handle_approval из локального модуля
+    from .handle_approval import handle_approval
+    
+    # Вызываем функцию обработки с параметром is_approved=False
+    await handle_approval(update, context, approval_id, level, False)
+
 # Экспортируем все необходимые функции
-__all__ = ['calculate_vacation_days', 'send_next_approval_notification', 'notify_user', 'notify_hr']
+__all__ = ['calculate_vacation_days', 'send_next_approval_notification', 'notify_user', 'notify_hr', 'approve_request', 'reject_request']

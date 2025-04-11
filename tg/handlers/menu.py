@@ -49,7 +49,6 @@ async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Добавляем кнопки для обычных пользователей
         if user.is_active:
             keyboard.append([InlineKeyboardButton("📅 Запрос отпуска", callback_data="vacation_request")])
-            keyboard.append([InlineKeyboardButton("🕒 Запрос отсутствия", callback_data="absence_request")])
 
         # Добавляем кнопки для HR и директоров
         if user.is_hr or user.is_director:

@@ -1,0 +1,127 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Подача заявки</title>
+  <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <style>
+    .content {
+      flex: 1;
+      padding: 40px;
+    }
+
+    form {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .form-row {
+      display: flex;
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .form-row > div {
+      flex: 1;
+    }
+
+    .success-message {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+
+    .error-message {
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <h2>Навигация</h2>
+    <a href="{% url 'index' %}">Главная</a>
+    <a href="{% url 'submit' %}" class="active">Подача заявки</a>
+    <a href="{% url 'requests' %}">Все заявки</a>
+    <a href="{% url 'calendar_view' %}">Календарь</a>
+  </aside>
+
+  <div class="content">
+    <h1>Подача заявки на отпуск</h1>
+    
+    {% if success_message %}
+      <div class="success-message">
+        {{ success_message }}
+      </div>
+    {% endif %}
+    
+    {% if error_message %}
+      <div class="error-message">
+        {{ error_message }}
+      </div>
+    {% endif %}
+    
+    <form method="post" action="{% url 'submit' %}">
+      {% csrf_token %}
+      
+      {% if user.is_hr or user.is_director or user.is_admin %}
+        <label for="employee">Сотрудник:</label>
+        <select name="employee" id="employee">
+          <option value="">Выберите сотрудника</option>
+          {% for employee in employees %}
+            <option value="{{ employee.id }}">{{ employee.full_name }}</option>
+          {% endfor %}
+        </select>
+      {% endif %}
+      
+      <div class="form-row">
+        <div>
+          <label for="start_date">Дата начала:</label>
+          <input type="date" name="start_date" id="start_date" required>
+        </div>
+        <div>
+          <label for="end_date">Дата окончания:</label>
+          <input type="date" name="end_date" id="end_date" required>
+        </div>
+      </div>
+      
+      <label for="vacation_type">Тип отпуска:</label>
+      <select name="vacation_type" id="vacation_type" required>
+        <option value="">Выберите тип отпуска</option>
+        <option value="annual">Ежегодный оплачиваемый отпуск</option>
+        <option value="unpaid">Отпуск без сохранения заработной платы</option>
+        <option value="study">Учебный отпуск</option>
+      </select>
+      
+      <label for="comments">Комментарии:</label>
+      <textarea name="comments" id="comments" rows="4"></textarea>
+      
+      <button type="submit">Отправить заявку</button>
+    </form>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const startDateInput = document.getElementById('start_date');
+      const endDateInput = document.getElementById('end_date');
+      
+      startDateInput.addEventListener('change', function() {
+        if (endDateInput.value && new Date(endDateInput.value) < new Date(startDateInput.value)) {
+          endDateInput.value = startDateInput.value;
+        }
+        endDateInput.min = startDateInput.value;
+      });
+    });
+  </script>
+</body>
+</html>

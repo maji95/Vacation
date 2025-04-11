@@ -5,6 +5,7 @@ from models import User, VacationRequest
 from ..admin.system_monitor import SystemMonitor
 from ..approval.create_request import create_approval_request, send_approval_request
 import logging
+from datetime import datetime
 
 # Настройка логирования
 logging.basicConfig(
@@ -159,3 +160,105 @@ async def confirm_vacation(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
     finally:
         session.close()
+
+async def process_vacation_message(update, context):
+    """Обрабатывает текстовые сообщения в процессе запроса отпуска"""
+    user_data = context.user_data
+    message_text = update.message.text
+    
+    if 'vacation_state' not in user_data:
+        await update.message.reply_text(
+            "Пожалуйста, начните запрос отпуска через меню бота."
+        )
+        return
+    
+    state = user_data['vacation_state']
+    
+    if state == 'waiting_start_date':
+        # Обработка ввода даты начала отпуска
+        try:
+            start_date = datetime.strptime(message_text, '%d.%m.%Y').date()
+            today = datetime.now().date()
+            
+            if start_date < today:
+                await update.message.reply_text(
+                    "Дата начала отпуска не может быть в прошлом. Пожалуйста, введите корректную дату:"
+                )
+                return
+                
+            user_data['start_date'] = start_date
+            user_data['vacation_state'] = 'waiting_end_date'
+            
+            # Создаем кнопку "Назад"
+            keyboard = [[InlineKeyboardButton("« Назад", callback_data="restart_vacation_request")]]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            
+            await update.message.reply_text(
+                f"Дата начала отпуска: {start_date.strftime('%d.%m.%Y')}\n\n"
+                "Теперь введите дату окончания отпуска в формате ДД.ММ.ГГГГ:",
+                reply_markup=reply_markup
+            )
+        except ValueError:
+            await update.message.reply_text(
+                "Некорректный формат даты. Пожалуйста, введите дату в формате ДД.ММ.ГГГГ:"
+            )
+    
+    elif state == 'waiting_end_date':
+        # Обработка ввода даты окончания отпуска
+        try:
+            end_date = datetime.strptime(message_text, '%d.%m.%Y').date()
+            start_date = user_data['start_date']
+            
+            if end_date < start_date:
+                await update.message.reply_text(
+                    "Дата окончания отпуска не может быть раньше даты начала. Пожалуйста, введите корректную дату:"
+                )
+                return
+                
+            # Вычисляем количество дней отпуска
+            vacation_days = (end_date - start_date).days + 1
+            
+            # Проверяем, есть ли у пользователя достаточно дней отпуска
+            session = get_session()
+            try:
+                user = session.query(User).filter_by(telegram_id=update.message.from_user.id).first()
+                if not user:
+                    await update.message.reply_text("Пользователь не найден.")
+                    return
+                    
+                if vacation_days > user.vacation_days:
+                    await update.message.reply_text(
+                        f"У вас недостаточно дней отпуска. Доступно: {int(user.vacation_days)}, запрошено: {vacation_days}.\n"
+                        "Пожалуйста, введите другую дату окончания отпуска:"
+                    )
+                    return
+                    
+                # Сохраняем данные
+                user_data['end_date'] = end_date
+                user_data['vacation_days'] = vacation_days
+                
+                # Создаем клавиатуру для подтверждения
+                keyboard = [
+                    [InlineKeyboardButton("✅ Подтвердить", callback_data="confirm_vacation")],
+                    [InlineKeyboardButton("❌ Отменить", callback_data="restart_vacation_request")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                
+                await update.message.reply_text(
+                    f"📅 Период отпуска: {start_date.strftime('%d.%m.%Y')} - {end_date.strftime('%d.%m.%Y')}\n"
+                    f"📊 Количество дней: {vacation_days}\n\n"
+                    "Пожалуйста, проверьте данные и подтвердите запрос:",
+                    reply_markup=reply_markup
+                )
+            finally:
+                session.close()
+        except ValueError:
+            await update.message.reply_text(
+                "Некорректный формат даты. Пожалуйста, введите дату в формате ДД.ММ.ГГГГ:"
+            )
+    
+    else:
+        await update.message.reply_text(
+            "Неизвестное состояние. Пожалуйста, начните запрос отпуска заново."
+        )
+        user_data.clear()

@@ -41,7 +41,6 @@ class User(Base):
     # Связи
     department = relationship("Department")
     vacation_requests = relationship("VacationRequest", back_populates="user")
-    hours_requests = relationship("HoursRequest", back_populates="user")
 
     def __repr__(self):
         return f"<User(id={self.id}, full_name='{self.full_name}')>"
@@ -159,98 +158,3 @@ class ApprovalProcess(Base):
 
     def __repr__(self):
         return f"<ApprovalProcess(id={self.id}, original_name='{self.original_name}', employee_name='{self.employee_name}')>"
-
-class HoursRequest(Base):
-    __tablename__ = 'hours_request'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    date_absence = Column(DateTime, nullable=False)
-    start_hour = Column(String(5), nullable=False)  # формат ЧЧ:ММ
-    end_hour = Column(String(5), nullable=False)    # формат ЧЧ:ММ
-    status = Column(String(10), default='pending')
-    comments = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    user = relationship("User", back_populates="hours_requests")
-
-    def __repr__(self):
-        return f"<HoursRequest(id={self.id}, user_id={self.user_id}, date={self.date_absence})>"
-
-class ApprovalFirstHour(Base):
-    __tablename__ = 'approval_first_hour'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)
-    name_approval = Column(String(100), nullable=False)
-    status = Column(String(20), default='pending')
-    date = Column(DateTime, default=datetime.utcnow)
-    date_absence = Column(DateTime, nullable=False)
-    start_hour = Column(String(5), nullable=False)
-    end_hour = Column(String(5), nullable=False)
-
-    def __repr__(self):
-        return f"<ApprovalFirstHour(id={self.id}, name='{self.name}', status='{self.status}')>"
-
-class ApprovalSecondHour(Base):
-    __tablename__ = 'approval_second_hour'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)
-    name_approval = Column(String(100), nullable=False)
-    status = Column(String(20), default='pending')
-    date = Column(DateTime, default=datetime.utcnow)
-    date_absence = Column(DateTime, nullable=False)
-    start_hour = Column(String(5), nullable=False)
-    end_hour = Column(String(5), nullable=False)
-
-    def __repr__(self):
-        return f"<ApprovalSecondHour(id={self.id}, name='{self.name}', status='{self.status}')>"
-
-class ApprovalFinalHour(Base):
-    __tablename__ = 'approval_final_hour'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)
-    name_approval = Column(String(100), nullable=False)
-    status = Column(String(20), default='pending')
-    date = Column(DateTime, default=datetime.utcnow)
-    date_absence = Column(DateTime, nullable=False)
-    start_hour = Column(String(5), nullable=False)
-    end_hour = Column(String(5), nullable=False)
-
-    def __repr__(self):
-        return f"<ApprovalFinalHour(id={self.id}, name='{self.name}', status='{self.status}')>"
-
-class ApprovalDoneHour(Base):
-    """Модель для хранения информации об утвержденных отгулах"""
-    __tablename__ = 'approval_done_hour'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False)
-    name_approval = Column(String(100), nullable=False)
-    status = Column(String(20), default='approved')
-    date = Column(DateTime, default=datetime.utcnow)
-    date_absence = Column(DateTime, nullable=False)
-    start_hour = Column(Time, nullable=False)
-    end_hour = Column(Time, nullable=False)
-
-    def __repr__(self):
-        return f"<ApprovalDoneHour(id={self.id}, name='{self.name}', status='{self.status}')>"
-
-class ApprovalProcessHour(Base):
-    __tablename__ = 'approval_process_hour'
-
-    id = Column(Integer, primary_key=True)
-    original_name = Column(String(100), nullable=False)
-    employee_name = Column(String(100), nullable=False)
-    first_approval = Column(String(100), nullable=True)
-    second_approval = Column(String(100), nullable=True)
-    final_approval = Column(String(100), nullable=True)
-    reception_info = Column(String(255), nullable=True)
-    replacement = Column(String(100), nullable=True)
-    timekeeper = Column(String(100), nullable=True)
-
-    def __repr__(self):
-        return f"<ApprovalProcessHour(id={self.id}, original_name='{self.original_name}', employee_name='{self.employee_name}')>"
