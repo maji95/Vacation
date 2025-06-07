@@ -2,16 +2,7 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 from .menu import show_menu
-from .vacation import (
-    vacation_request, 
-    vacation_by_days, 
-    confirm_vacation, 
-    restart_vacation_request,
-    process_vacation_message
-)
 from .approval import view_pending_requests, approve_request, reject_request
-from .auth import start_auth, process_auth
-from .admin import admin_panel, process_admin_command
 from .core.request_types import RequestType
 from .core.dispatcher import RequestDispatcher
 
