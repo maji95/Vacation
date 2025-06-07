@@ -5,11 +5,6 @@ from models import User, VacationRequest
 import logging
 from ..approval.approval_utils import check_approval_permissions, notify_hr_managers, notify_employee_request, update_vacation_status
 
-# Настройка логирования
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 async def notify_hr_managers(vacation_request):

@@ -5,11 +5,6 @@ from models import User, VacationRequest, ApprovalFirst, ApprovalSecond, Approva
 import logging
 from datetime import datetime
 
-# Настройка логирования
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 async def check_approval_permissions(user: User, expected_name: str = None) -> bool:
