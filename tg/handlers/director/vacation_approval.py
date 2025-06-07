@@ -12,31 +12,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def notify_hr_managers(vacation_request):
-    """Уведомляет HR-менеджеров об одобренном отпуске"""
-    session = get_session()
-    try:
-        hr_managers = session.query(User).filter_by(is_hr=True).all()
-        employee = session.query(User).filter_by(id=vacation_request.user_id).first()
-        
-        message = (
-            f"✅ Новый одобренный отпуск\n"
-            f"Сотрудник: {employee.full_name}\n"
-            f"Период: {vacation_request.start_date.strftime('%d.%m.%Y')} - "
-            f"{vacation_request.end_date.strftime('%d.%m.%Y')}"
-        )
-        
-        for hr in hr_managers:
-            try:
-                await context.bot.send_message(
-                    chat_id=hr.telegram_id,
-                    text=message
-                )
-            except Exception as e:
-                logger.error(f"Ошибка при отправке уведомления HR {hr.full_name}: {e}")
-    finally:
-        session.close()
-
 async def handle_vacation_approval(update: Update, context: ContextTypes.DEFAULT_TYPE, vacation_request_id: int):
     """Отправляет запрос на отпуск директору для одобрения"""
     session = get_session()
