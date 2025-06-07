@@ -4,10 +4,6 @@ from config import get_session
 from models import User, ApprovalFirst, ApprovalSecond, ApprovalFinal, ApprovalDone
 import logging
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 async def view_pending_requests(update: Update, context: ContextTypes.DEFAULT_TYPE):

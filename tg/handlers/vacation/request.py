@@ -7,11 +7,6 @@ from ..approval.create_request import create_approval_request, send_approval_req
 import logging
 from datetime import datetime
 
-# Настройка логирования
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 async def vacation_request(update: Update, context: ContextTypes.DEFAULT_TYPE):

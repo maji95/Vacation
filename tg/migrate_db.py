@@ -2,10 +2,6 @@ import logging
 from sqlalchemy import text
 from config import engine, Base
 
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 def drop_absence_tables():

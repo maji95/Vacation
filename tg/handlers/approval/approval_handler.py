@@ -6,11 +6,6 @@ from ..admin.system_monitor import SystemMonitor
 from datetime import datetime, date
 import logging
 
-# Настройка логирования
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 def calculate_vacation_days(start_date: date, end_date: date) -> int:

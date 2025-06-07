@@ -6,11 +6,6 @@ from ..approval.create_request import create_approval_request, send_approval_req
 import logging
 from datetime import datetime, timedelta
 
-# Настройка логирования
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', 
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 def calculate_vacation_days(start_date: datetime, end_date: datetime) -> int:

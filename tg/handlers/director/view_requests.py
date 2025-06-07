@@ -5,11 +5,6 @@ from models import User, VacationRequest
 import logging
 from ..approval.approval_utils import check_approval_permissions
 
-# Настройка логирования
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 logger = logging.getLogger(__name__)
 
 async def view_requests(update: Update, context: ContextTypes.DEFAULT_TYPE):
