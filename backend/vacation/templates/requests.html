@@ -110,10 +110,12 @@
           <thead>
             <tr>
               <th>Сотрудник</th>
-              <th>Дата начала</th>
-              <th>Дата окончания</th>
+              <th>Период</th>
               <th>Тип</th>
-              <th>Статус</th>
+              <th>Статус заявки</th>
+              <th>1-й этап</th>
+              <th>2-й этап</th>
+              <th>3-й этап</th>
               <th>Комментарий</th>
               <th>Действия</th>
             </tr>
@@ -122,51 +124,35 @@
             {% for request in vacation_requests %}
               <tr>
                 <td>{{ request.user.full_name }}</td>
-                <td>{{ request.start_date|date:"d.m.Y" }}</td>
-                <td>{{ request.end_date|date:"d.m.Y" }}</td>
+                <td>{{ request.start_date|date:"d.m.Y" }}<br>-<br>{{ request.end_date|date:"d.m.Y" }}</td>
                 <td>
-                  {% if request.vacation_type == 'annual' %}
-                    Ежегодный
-                  {% elif request.vacation_type == 'unpaid' %}
-                    Без сохранения
-                  {% elif request.vacation_type == 'study' %}
-                    Учебный
-                  {% endif %}
+                  {% if request.vacation_type == 'annual' %}Ежегодный{% elif request.vacation_type == 'unpaid' %}Без сохранения{% elif request.vacation_type == 'study' %}Учебный{% endif %}
                 </td>
                 <td>
-                  {% if request.status == 'pending' %}
-                    <span class="status-pending">Ожидает</span>
-                  {% elif request.status == 'approved' %}
-                    <span class="status-approved">Одобрено</span>
-                  {% elif request.status == 'rejected' %}
-                    <span class="status-rejected">Отклонено</span>
-                  {% endif %}
+                  {% if request.status == 'pending' %}<span class="status-pending">Ожидает</span>{% elif request.status == 'approved' %}<span class="status-approved">Одобрено</span>{% elif request.status == 'rejected' %}<span class="status-rejected">Отклонено</span>{% endif %}
+                </td>
+                <td>
+                  {% with af=request.approval_first.first %}
+                    {% if af %}{% if af.status == 'pending' %}<span class="status-pending">Ожидает</span>{% elif af.status == 'approved' %}<span class="status-approved">Одобрено</span>{% elif af.status == 'rejected' %}<span class="status-rejected">Отклонено</span>{% endif %}{% else %}-{% endif %}
+                  {% endwith %}
+                </td>
+                <td>
+                  {% with as=request.approval_second.first %}
+                    {% if as %}{% if as.status == 'pending' %}<span class="status-pending">Ожидает</span>{% elif as.status == 'approved' %}<span class="status-approved">Одобрено</span>{% elif as.status == 'rejected' %}<span class="status-rejected">Отклонено</span>{% endif %}{% else %}-{% endif %}
+                  {% endwith %}
+                </td>
+                <td>
+                  {% with afn=request.approval_final.first %}
+                    {% if afn %}{% if afn.status == 'pending' %}<span class="status-pending">Ожидает</span>{% elif afn.status == 'approved' %}<span class="status-approved">Одобрено</span>{% elif afn.status == 'rejected' %}<span class="status-rejected">Отклонено</span>{% endif %}{% else %}-{% endif %}
+                  {% endwith %}
                 </td>
                 <td>{{ request.comments }}</td>
                 <td>
-                  {% if request.status == 'pending' %}
-                    {% if user.is_hr or user.is_director or user.is_admin %}
-                      <form method="post" action="{% url 'vacation_detail' request.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="approve">
-                        <button type="submit" class="approve">Одобрить</button>
-                      </form>
-                      <form method="post" action="{% url 'vacation_detail' request.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="reject">
-                        <button type="submit" class="reject">Отклонить</button>
-                      </form>
-                    {% endif %}
-                    {% if request.user.id == user.id %}
-                      <form method="post" action="{% url 'vacation_detail' request.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="cancel">
-                        <button type="submit" class="cancel">Отменить</button>
-                      </form>
-                    {% endif %}
-                  {% endif %}
+                  <a href="{% url 'vacation_detail' request.id %}">Подробнее</a>
                 </td>
               </tr>
+            {% empty %}
+              <tr><td colspan="9">Нет активных заявок</td></tr>
             {% endfor %}
           </tbody>
         </table>

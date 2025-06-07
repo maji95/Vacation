@@ -55,17 +55,12 @@ class User(AbstractUser):
     full_name = models.CharField(max_length=100, unique=True)  # Делаем full_name уникальным
     telegram_id = models.BigIntegerField(null=True, blank=True)  # Делаем telegram_id необязательным
     vacation_days = models.FloatField(default=0)
-    department_id = models.IntegerField(null=True, blank=True)  # Поле для отдела (ID)
-    
-    # Флаги ролей и прав
     is_hr = models.BooleanField(default=False)
     is_director = models.BooleanField(default=False)
     is_admin = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_superuser = models.BooleanField(default=False)
-    
-    # Аутентификация и временные метки
     password = models.CharField(max_length=128)
     last_login = models.DateTimeField(null=True, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
@@ -134,68 +129,61 @@ class NameDictionary(models.Model):
         return f"{self.original_name} -> {self.latin_name}"
 
 class ApprovalFirst(models.Model):
+    vacation_request = models.ForeignKey('VacationRequest', on_delete=models.CASCADE, related_name='approval_first')
     name = models.CharField(max_length=100)
     name_approval = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, default='pending')
+    status = models.CharField(max_length=20, default='pending', choices=[
+        ('pending', 'Ожидает'),
+        ('approved', 'Одобрено'),
+        ('rejected', 'Отклонено')
+    ])
     date = models.DateTimeField(default=timezone.now)
-    days = models.FloatField()
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    comment = models.TextField(null=True, blank=True)
 
     class Meta:
         db_table = 'approval_first'
         managed = True
 
     def __str__(self):
-        return f"First approval for {self.name} by {self.name_approval}"
+        return f"First approval for {self.vacation_request} by {self.name_approval} - {self.status}"
 
 class ApprovalSecond(models.Model):
+    vacation_request = models.ForeignKey('VacationRequest', on_delete=models.CASCADE, related_name='approval_second')
     name = models.CharField(max_length=100)
     name_approval = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, default='pending')
+    status = models.CharField(max_length=20, default='pending', choices=[
+        ('pending', 'Ожидает'),
+        ('approved', 'Одобрено'),
+        ('rejected', 'Отклонено')
+    ])
     date = models.DateTimeField(default=timezone.now)
-    days = models.FloatField()
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    comment = models.TextField(null=True, blank=True)
 
     class Meta:
         db_table = 'approval_second'
         managed = True
 
     def __str__(self):
-        return f"Second approval for {self.name} by {self.name_approval}"
+        return f"Second approval for {self.vacation_request} by {self.name_approval} - {self.status}"
 
 class ApprovalFinal(models.Model):
+    vacation_request = models.ForeignKey('VacationRequest', on_delete=models.CASCADE, related_name='approval_final')
     name = models.CharField(max_length=100)
     name_approval = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, default='pending')
+    status = models.CharField(max_length=20, default='pending', choices=[
+        ('pending', 'Ожидает'),
+        ('approved', 'Одобрено'),
+        ('rejected', 'Отклонено')
+    ])
     date = models.DateTimeField(default=timezone.now)
-    days = models.FloatField()
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    comment = models.TextField(null=True, blank=True)
 
     class Meta:
         db_table = 'approval_final'
         managed = True
 
     def __str__(self):
-        return f"Final approval for {self.name} by {self.name_approval}"
-
-class ApprovalDone(models.Model):
-    name = models.CharField(max_length=100)
-    name_approval = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, default='approved')
-    date = models.DateTimeField(default=timezone.now)
-    days = models.FloatField()
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-
-    class Meta:
-        db_table = 'approval_done'
-        managed = True
-
-    def __str__(self):
-        return f"Completed approval for {self.name} by {self.name_approval}"
+        return f"Final approval for {self.vacation_request} by {self.name_approval} - {self.status}"
 
 class ApprovalProcess(models.Model):
     original_name = models.CharField(max_length=100)
@@ -213,3 +201,19 @@ class ApprovalProcess(models.Model):
 
     def __str__(self):
         return f"Approval process for {self.employee_name}"
+
+class ApprovalDone(models.Model):
+    name = models.CharField(max_length=100)
+    name_approval = models.CharField(max_length=100)
+    status = models.CharField(max_length=20, default='approved')
+    date = models.DateTimeField(default=timezone.now)
+    days = models.FloatField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    class Meta:
+        db_table = 'approval_done'
+        managed = True
+
+    def __str__(self):
+        return f"Completed approval for {self.name} by {self.name_approval}"

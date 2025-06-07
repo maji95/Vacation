@@ -233,13 +233,6 @@ def login_view(request):
             return render(request, 'login.html', {'form_errors': 'Пожалуйста, укажите имя и пароль'})
         
         try:
-            # Проверяем, существует ли пользователь с таким именем
-            try:
-                user_exists = User.objects.filter(full_name=full_name).exists()
-                logger.info(f"Пользователь с именем {full_name} существует: {user_exists}")
-            except Exception as e:
-                logger.error(f"Ошибка при проверке существования пользователя: {e}")
-            
             # Используем authenticate для проверки учетных данных
             logger.info(f"Вызов authenticate с параметрами: full_name={full_name}")
             user = authenticate(request, full_name=full_name, password=password)
@@ -254,7 +247,7 @@ def login_view(request):
                 logger.info(f'Пользователь {full_name} успешно авторизован')
                 
                 # Перенаправляем на страницу, указанную в параметре next, или на главную
-                next_url = request.POST.get('next', '/')
+                next_url = request.POST.get('next') or '/'
                 return redirect(next_url)
             else:
                 # Логирование неудачной аутентификации

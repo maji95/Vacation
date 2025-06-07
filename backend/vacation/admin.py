@@ -11,14 +11,14 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('full_name', 'telegram_id', 'department_id', 'vacation_days', 'is_active')
-    list_filter = ('is_active', 'is_hr', 'is_director', 'is_admin', 'department_id')
+    list_display = ('full_name', 'telegram_id', 'vacation_days', 'is_active')
+    list_filter = ('is_active', 'is_hr', 'is_director', 'is_admin')
     search_fields = ('full_name', 'telegram_id')
     ordering = ('full_name',)
     
     fieldsets = (
         (None, {'fields': ('telegram_id', 'password')}),
-        ('Personal info', {'fields': ('full_name', 'department_id')}),
+        ('Personal info', {'fields': ('full_name',)}),
         ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser',
                                   'is_hr', 'is_director', 'is_admin')}),
         ('Important dates', {'fields': ('last_login', 'date_joined')}),
@@ -57,28 +57,28 @@ class NameDictionaryAdmin(admin.ModelAdmin):
 
 @admin.register(ApprovalFirst)
 class ApprovalFirstAdmin(admin.ModelAdmin):
-    list_display = ('name', 'name_approval', 'status', 'days', 'start_date', 'end_date')
+    list_display = ('vacation_request', 'name', 'name_approval', 'status', 'date', 'comment')
     list_filter = ('status', 'date')
     search_fields = ('name', 'name_approval')
     ordering = ('-date',)
 
 @admin.register(ApprovalSecond)
 class ApprovalSecondAdmin(admin.ModelAdmin):
-    list_display = ('name', 'name_approval', 'status', 'days', 'start_date', 'end_date')
+    list_display = ('vacation_request', 'name', 'name_approval', 'status', 'date', 'comment')
     list_filter = ('status', 'date')
     search_fields = ('name', 'name_approval')
     ordering = ('-date',)
 
 @admin.register(ApprovalFinal)
 class ApprovalFinalAdmin(admin.ModelAdmin):
-    list_display = ('name', 'name_approval', 'status', 'days', 'start_date', 'end_date')
+    list_display = ('vacation_request', 'name', 'name_approval', 'status', 'date', 'comment')
     list_filter = ('status', 'date')
     search_fields = ('name', 'name_approval')
     ordering = ('-date',)
 
 @admin.register(ApprovalDone)
 class ApprovalDoneAdmin(admin.ModelAdmin):
-    list_display = ('name', 'name_approval', 'status', 'days', 'start_date', 'end_date')
+    list_display = ('name', 'name_approval', 'status', 'date')
     list_filter = ('status', 'date')
     search_fields = ('name', 'name_approval')
     ordering = ('-date',)

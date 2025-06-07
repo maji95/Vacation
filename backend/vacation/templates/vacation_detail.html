@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Детали заявки на отпуск{% endblock %}
+
+{% block content %}
+<div class="half-block">
+  <h2>Детали заявки</h2>
+  <table>
+    <tr><th>Сотрудник</th><td>{{ vacation.user.full_name }}</td></tr>
+    <tr><th>Период</th><td>{{ vacation.start_date|date:"d.m.Y" }} — {{ vacation.end_date|date:"d.m.Y" }}</td></tr>
+    <tr><th>Тип отпуска</th><td>
+      {% if vacation.vacation_type == 'annual' %}Ежегодный{% elif vacation.vacation_type == 'unpaid' %}Без сохранения{% elif vacation.vacation_type == 'study' %}Учебный{% endif %}
+    </td></tr>
+    <tr><th>Комментарий</th><td>{{ vacation.comments }}</td></tr>
+    <tr><th>Статус заявки</th>
+      <td>
+        {% if vacation.status == 'pending' %}<span class="status-pending">Ожидает</span>{% elif vacation.status == 'approved' %}<span class="status-approved">Одобрено</span>{% elif vacation.status == 'rejected' %}<span class="status-rejected">Отклонено</span>{% endif %}
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div class="half-block">
+  <h2>Ступени согласования</h2>
+  <table>
+    <tr>
+      <th>Этап</th>
+      <th>Согласующий</th>
+      <th>Статус</th>
+      <th>Комментарий</th>
+      <th>Действие</th>
+    </tr>
+    <tr>
+      <td>1. Первый</td>
+      <td>{{ approval_first.name_approval }}</td>
+      <td>{% if approval_first.status == 'pending' %}<span class="status-pending">Ожидает</span>{% elif approval_first.status == 'approved' %}<span class="status-approved">Одобрено</span>{% elif approval_first.status == 'rejected' %}<span class="status-rejected">Отклонено</span>{% endif %}</td>
+      <td>{{ approval_first.comment }}</td>
+      <td>
+        {% if approval_first.status == 'pending' and user.full_name == approval_first.name_approval %}
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve">
+          <input type="text" name="comment" placeholder="Комментарий" style="width:120px;">
+          <button type="submit">Одобрить</button>
+        </form>
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <input type="text" name="comment" placeholder="Причина" style="width:120px;">
+          <button type="submit">Отклонить</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td>2. Второй</td>
+      <td>{{ approval_second.name_approval }}</td>
+      <td>{% if approval_second.status == 'pending' %}<span class="status-pending">Ожидает</span>{% elif approval_second.status == 'approved' %}<span class="status-approved">Одобрено</span>{% elif approval_second.status == 'rejected' %}<span class="status-rejected">Отклонено</span>{% endif %}</td>
+      <td>{{ approval_second.comment }}</td>
+      <td>
+        {% if approval_second.status == 'pending' and user.full_name == approval_second.name_approval %}
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve">
+          <input type="text" name="comment" placeholder="Комментарий" style="width:120px;">
+          <button type="submit">Одобрить</button>
+        </form>
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <input type="text" name="comment" placeholder="Причина" style="width:120px;">
+          <button type="submit">Отклонить</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    <tr>
+      <td>3. Финальный</td>
+      <td>{{ approval_final.name_approval }}</td>
+      <td>{% if approval_final.status == 'pending' %}<span class="status-pending">Ожидает</span>{% elif approval_final.status == 'approved' %}<span class="status-approved">Одобрено</span>{% elif approval_final.status == 'rejected' %}<span class="status-rejected">Отклонено</span>{% endif %}</td>
+      <td>{{ approval_final.comment }}</td>
+      <td>
+        {% if approval_final.status == 'pending' and user.full_name == approval_final.name_approval %}
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="approve">
+          <input type="text" name="comment" placeholder="Комментарий" style="width:120px;">
+          <button type="submit">Одобрить</button>
+        </form>
+        <form method="post" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="reject">
+          <input type="text" name="comment" placeholder="Причина" style="width:120px;">
+          <button type="submit">Отклонить</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+  <a href="{% url 'requests' %}" style="display:inline-block;margin-top:20px;">← К списку заявок</a>
+</div>
+{% endblock %}
