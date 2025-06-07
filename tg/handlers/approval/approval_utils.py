@@ -138,18 +138,3 @@ async def update_vacation_status(session, vacation_request_id: int, new_status: 
         return vacation_request
     return None
 
-async def create_done_approval(session, approval_entry, status: str):
-    """
-    Создает запись в таблице завершенных утверждений
-    """
-    done_approval = ApprovalDone(
-        name=approval_entry.name,
-        name_approval=approval_entry.name_approval,
-        days=approval_entry.days,
-        start_date=approval_entry.start_date,
-        end_date=approval_entry.end_date,
-        status=status
-    )
-    session.add(done_approval)
-    session.commit()
-    return done_approval

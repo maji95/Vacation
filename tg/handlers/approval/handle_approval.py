@@ -5,7 +5,7 @@ from models import User, ApprovalFirst, ApprovalSecond, ApprovalFinal, ApprovalD
 from datetime import datetime, timezone, timedelta
 import logging
 from .approval_handler import calculate_vacation_days, send_next_approval_notification
-from .approval_utils import check_approval_permissions, notify_hr_managers, notify_employee_approval, create_done_approval
+from .approval_utils import check_approval_permissions, notify_hr_managers, notify_employee_approval
 
 # Настройка логирования
 logging.basicConfig(
