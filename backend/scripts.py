@@ -1,13 +1,18 @@
 import mysql.connector
 import pandas as pd
 import unidecode
+import os
+from dotenv import load_dotenv
 
 # Конфигурация подключения к БД
+# Значения берутся из переменных окружения, при отсутствии
+# используются прежние параметры по умолчанию
+load_dotenv()
 db_config = {
-    'host': '192.168.101.90',
-    'user': 'suceava15a',
-    'password': 'Kiev73',
-    'database': 'HR_db',
+    'host': os.getenv('DB_HOST', '192.168.101.90'),
+    'user': os.getenv('DB_USER', 'suceava15a'),
+    'password': os.getenv('DB_PASSWORD', 'Kiev73'),
+    'database': os.getenv('DB_NAME', 'HR_db'),
     'charset': 'utf8mb4',
     'use_unicode': True
 }
