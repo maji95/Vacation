@@ -6,20 +6,11 @@ from .request import (
     restart_vacation_request,
     process_vacation_message
 )
-from .handler import VacationHandler
 from .message_handler import handle_message
 import logging
 
 logger = logging.getLogger(__name__)
 
-__all__ = [
-    'vacation_request', 
-    'vacation_by_days', 
-    'confirm_vacation', 
-    'restart_vacation_request',
-    'process_vacation_message',
-    'VacationHandler'
-]
 
 def register_handlers(application):
     """Регистрация обработчиков для отпусков"""
